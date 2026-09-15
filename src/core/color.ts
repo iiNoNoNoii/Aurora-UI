@@ -53,6 +53,49 @@ export function scaleSaturation(c: RGB, factor: number): RGB {
   ];
 }
 
+/* ------------------------------------------------------------------ *
+ * Linear light
+ *
+ * sRGB values are gamma-encoded, so mixing them arithmetically darkens and
+ * muddies the midpoint of every blend. A sky is one enormous blend, which is
+ * exactly where that shows: the band between two stops goes grey instead of
+ * staying luminous. Decoding to linear light, mixing there, and re-encoding
+ * costs a handful of pow() calls per gradient rebuild and is the difference
+ * between "a gradient" and "light".
+ * ------------------------------------------------------------------ */
+
+const SRGB_TO_LINEAR = new Float32Array(256);
+for (let i = 0; i < 256; i++) {
+  const c = i / 255;
+  SRGB_TO_LINEAR[i] = c <= 0.04045 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4);
+}
+
+export function srgbChannelToLinear(value: number): number {
+  const index = Math.round(clamp(value, 0, 255));
+  return SRGB_TO_LINEAR[index];
+}
+
+export function linearChannelToSrgb(value: number): number {
+  const v = clamp(value, 0, 1);
+  const encoded = v <= 0.0031308 ? v * 12.92 : 1.055 * Math.pow(v, 1 / 2.4) - 0.055;
+  return encoded * 255;
+}
+
+export function rgbToLinear(c: RGB): RGB {
+  return [srgbChannelToLinear(c[0]), srgbChannelToLinear(c[1]), srgbChannelToLinear(c[2])];
+}
+
+export function linearToRgb(c: RGB): RGB {
+  return [linearChannelToSrgb(c[0]), linearChannelToSrgb(c[1]), linearChannelToSrgb(c[2])];
+}
+
+/** Mix two sRGB colours through linear light. */
+export function mixRgbLinear(a: RGB, b: RGB, t: number): RGB {
+  const la = rgbToLinear(a);
+  const lb = rgbToLinear(b);
+  return linearToRgb([lerp(la[0], lb[0], t), lerp(la[1], lb[1], t), lerp(la[2], lb[2], t)]);
+}
+
 /** Squared distance – cheap "did this colour change enough to re-tint sprites?" test. */
 export function colorDistanceSq(a: RGB, b: RGB): number {
   const dr = a[0] - b[0];

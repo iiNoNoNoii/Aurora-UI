@@ -14,9 +14,14 @@ export default defineConfig({
     // Lit 3 uses TC39-stage decorators via TypeScript's legacy decorator emit.
     // esbuild reads experimentalDecorators from tsconfig.json automatically.
     //
-    // `inline` keeps `/*! … */` comments: AGPL-3.0 requires everyone who
-    // receives the bundle to be able to find the source, so the banner must
-    // survive minification. Do not set this to 'none'.
+    // `inline` keeps legal comments. Two obligations depend on it, so do NOT
+    // set this to 'none':
+    //   1. AGPL-3.0 requires everyone who receives the bundle to be able to
+    //      find the source, which is what the banner below points at.
+    //   2. Lit is BSD-3-Clause and is bundled into dist/. That licence requires
+    //      its copyright notice to travel with binary distributions; the
+    //      `@license Copyright Google LLC` headers must survive minification.
+    // See THIRD-PARTY-NOTICES.md.
     legalComments: 'inline',
   },
   build: {

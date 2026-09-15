@@ -54,6 +54,8 @@ export interface EffectsConfig {
   moon: boolean;
   stars: boolean;
   shooting_stars: boolean;
+  /** Real named stars at their actual positions, joined into the figures. */
+  constellations: boolean;
   clouds: boolean;
   rain: boolean;
   snow: boolean;
@@ -290,6 +292,10 @@ export interface SceneState {
   sunElevation: number;
   sunAzimuth: number;
   sunRising: boolean;
+
+  /** Observer position, needed to place the real stars. */
+  latitude: number;
+  longitude: number;
 
   /** 1 = full daylight, 0 = sun below the horizon. */
   dayFactor: number;

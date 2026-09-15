@@ -111,8 +111,10 @@
       };
 
       // Regular cards on top, to check stacking and hit-testing.
+      // `?nocards` clears the view when the sky itself is what needs looking at.
+      const cardCount = params.has('nocards') ? 0 : 9;
       let clicks = 0;
-      for (let i = 1; i <= 9; i++) {
+      for (let i = 1; i <= cardCount; i++) {
         const el = document.createElement('div');
         el.className = 'ha-card';
         el.innerHTML = `<b>Card ${i}</b><div>Glass surface over the Aurora layer.</div>`;
@@ -126,10 +128,12 @@
         view.appendChild(el);
       }
 
-      const counter = document.createElement('div');
-      counter.className = 'ha-card';
-      counter.innerHTML = 'Clicks received: <span id="clicks">0</span>';
-      view.appendChild(counter);
+      if (cardCount > 0) {
+        const counter = document.createElement('div');
+        counter.className = 'ha-card';
+        counter.innerHTML = 'Clicks received: <span id="clicks">0</span>';
+        view.appendChild(counter);
+      }
     </script>
   </body>
 </html>

@@ -1,8 +1,49 @@
 # Changelog
 
-All notable changes to Aurora Background are documented here.
+All notable changes to Aurora UI are documented here.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and the project uses [Semantic Versioning](https://semver.org/).
+
+## [0.5.3-alpha] – 2026-09-15
+
+The sky gets the resolution it was missing, and a real one behind it.
+
+### Added
+
+- **Real constellations.** About seventy named stars are placed at their actual
+  altitude and azimuth for the configured latitude, longitude and the current
+  sidereal time, and joined into the traditional figures. Orion rises in
+  winter, the Summer Triangle stands overhead in August, southern latitudes get
+  the Southern Cross. Positions are recomputed every 20 s, not per frame.
+  Toggle with `effects.constellations`.
+- **One shared projection** (`core/projection.ts`) for the sun, the moon and
+  the stars — 240° of azimuth across the width — so the moon sits among the
+  constellations instead of on its own private track.
+- [THIRD-PARTY-NOTICES.md](THIRD-PARTY-NOTICES.md), covering the bundled Lit
+  copyright notice and where the star data comes from.
+
+### Changed — why the sky looks sharper
+
+Three things separated it from a premium gradient, and all three are fixed:
+
+- **Interpolation now happens in linear light.** Mixing gamma-encoded sRGB
+  darkens and muddies the midpoint of every blend, which is precisely where a
+  large sky shows it — the band between two stops went grey.
+- **A cubic through the palette instead of straight lines between stops.** A
+  `CanvasGradient` interpolates linearly between the stops it is handed, putting
+  a visible kink at each one. The five palette colours are now sampled through
+  a Hermite curve and fed in as 24 stops.
+- **Dithering.** A full-screen 8-bit gradient bands badly in deep twilight
+  blues. One pixel of static noise, drawn with the transform reset so it lands
+  on device pixels, dissolves it. Measured on a 720 px column: 704 colour
+  changes and a longest flat run of 2 px, where banding means long flat runs.
+
+### Fixed
+
+- The vertical projection capped at 60° altitude, so everything higher — Vega,
+  Deneb, Delta Cygni — collapsed onto one line. It now runs to the zenith.
+- Objects outside the drawn azimuth range were clamped to the screen edge,
+  stacking them there. They are culled instead.
 
 ## [0.5.2-alpha] – 2026-09-15
 
@@ -240,6 +281,7 @@ First working release. Everything in this list is implemented and rendering.
 - Nothing has been exercised inside a real Home Assistant yet; every check so
   far ran against a faithful mock.
 
+[0.5.3-alpha]: https://github.com/iiNoNoNoii/Aurora-UI/releases/tag/v0.5.3-alpha
 [0.5.2-alpha]: https://github.com/iiNoNoNoii/Aurora-UI/releases/tag/v0.5.2-alpha
 [0.5.1-alpha]: https://github.com/iiNoNoNoii/Aurora-UI/releases/tag/v0.5.1-alpha
 [0.5.0-alpha]: https://github.com/iiNoNoNoii/Aurora-UI/releases/tag/v0.5.0-alpha

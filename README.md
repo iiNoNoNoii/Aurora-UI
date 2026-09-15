@@ -23,7 +23,7 @@ surface that drifts with the sky.
 | | |
 |---|---|
 | **Continuous sky** | The palette is a function of `sun.sun` elevation, not a day/night switch. Sunrise leans pink and violet, sunset leans amber and gold. |
-| **Night** | Deep blue rather than black (OLED friendly), twinkling stars, a moon with a real phase, occasional shooting stars. |
+| **The real night sky** | About seventy named stars at their actual positions for your latitude, longitude and clock, joined into the traditional constellation figures — and they turn overhead as the night goes on. Plus a moon with a real phase and occasional shooting stars. Deep blue rather than black, OLED friendly. |
 | **Real weather** | Rain, snow, drifting fog and restrained lightning, plus two families of procedural clouds. Every Home Assistant `weather` condition is mapped; unknown states fall back gracefully. |
 | **Seasons** | A faint, hemisphere-aware seasonal cast — hazier and warmer in summer, amber in autumn, cool and pale in winter. Blended continuously, never switched. |
 | **Ambient lighting** | The live sky is published as `--aurora-*` CSS properties, and **Aurora Glass** turns your cards into translucent surfaces that drift with it. |
@@ -91,8 +91,9 @@ More snippets: [`examples/configuration-examples.yaml`](examples/configuration-e
 
 ### `effects`
 
-All `true` by default: `sun`, `moon`, `stars`, `shooting_stars`, `clouds`,
-`rain`, `snow`, `fog`, `lightning`, `season`, `parallax`.
+All `true` by default: `sun`, `moon`, `stars`, `shooting_stars`,
+`constellations`, `clouds`, `rain`, `snow`, `fog`, `lightning`, `season`,
+`parallax`.
 
 These are *permissions*, not switches — rain only appears when your weather
 entity actually reports rain. Set one to `false` to rule the effect out entirely.
@@ -358,9 +359,35 @@ attached asset, and the `Validate` workflow fails if it drifts from `src/`.
 
 ---
 
+## The real sky
+
+`effects.constellations` puts about seventy named stars where they actually
+are. Right ascension and declination are converted to altitude and azimuth
+using your Home Assistant latitude, longitude and the current sidereal time, so
+Orion rises in winter, the Summer Triangle stands overhead in August, and the
+whole sky turns 15° every hour. Southern latitudes get the Southern Cross and
+Alpha Centauri instead.
+
+The sun, the moon and the stars all share one projection — 240° of azimuth
+across the width — so the moon really does sit among the constellations.
+
+```yaml
+effects:
+  constellations: false # just the decorative star field, no figures
+```
+
+Where the data comes from, and why it is safe to ship, is set out in
+[THIRD-PARTY-NOTICES.md](THIRD-PARTY-NOTICES.md): the positions are
+measurements (facts carry no copyright), no catalogue file is embedded, and the
+constellation lines were drawn for this project rather than taken from one.
+
+---
+
 ## License
 
 **GNU Affero General Public License v3.0 or later** – see [LICENSE](LICENSE).
+Third-party components and the astronomical data are covered in
+[THIRD-PARTY-NOTICES.md](THIRD-PARTY-NOTICES.md).
 
 In short: you may use, study, change and share Aurora UI freely. If you
 distribute a modified version — or run one as part of a network service —

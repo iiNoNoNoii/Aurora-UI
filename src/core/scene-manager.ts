@@ -7,7 +7,7 @@ import type {
   SkyPalette,
   WeatherProfile,
 } from './types';
-import { clamp, clamp01, damp, lerp } from './math';
+import { clamp01, damp } from './math';
 import { computePalette, dampPalette, daylightFactors } from './palette';
 import { computeSeason } from './season';
 import { computeMoonPhase, computeMoonPosition } from './solar';
@@ -19,6 +19,8 @@ import { StarRenderer } from '../renderers/star-renderer';
 import { MoonRenderer } from '../renderers/moon-renderer';
 import { SunRenderer } from '../renderers/sun-renderer';
 import { CloudRenderer } from '../renderers/cloud-renderer';
+import { ConstellationRenderer } from '../renderers/constellation-renderer';
+import { clampProjectedX, projectAltAz } from './projection';
 import { FogRenderer } from '../renderers/fog-renderer';
 import { RainRenderer } from '../renderers/rain-renderer';
 import { SnowRenderer } from '../renderers/snow-renderer';
@@ -33,6 +35,7 @@ import { LightningRenderer } from '../renderers/lightning-renderer';
 export class SceneManager {
   private readonly sky = new SkyRenderer();
   private readonly stars = new StarRenderer();
+  private readonly constellations = new ConstellationRenderer();
   private readonly moon = new MoonRenderer();
   private readonly sun = new SunRenderer();
   private readonly clouds = new CloudRenderer();
@@ -78,6 +81,7 @@ export class SceneManager {
     this.renderers = [
       this.sky,
       this.stars,
+      this.constellations,
       this.moon,
       this.sun,
       this.clouds,
@@ -116,6 +120,8 @@ export class SceneManager {
       sunElevation: this.elevation,
       sunAzimuth: this.azimuth,
       sunRising: this.snapshot.sunRising,
+      latitude: this.snapshot.latitude,
+      longitude: this.snapshot.longitude,
       dayFactor: 0,
       nightFactor: 0,
       twilightFactor: 0,
@@ -268,22 +274,29 @@ export class SceneManager {
     state.palette = this.palette;
     state.weather = weather;
 
-    // Screen position of the sun: east on the left, west on the right.
-    state.sunX = clamp01((this.azimuth - 60) / 240);
-    // Sunrise must put the disc *just* above the bottom edge, so the curve is
-    // steep near the horizon and flattens out toward the zenith.
-    state.sunY =
-      this.elevation >= 0
-        ? 0.94 - Math.pow(clamp01(this.elevation / 60), 0.7) * 0.84
-        : clamp(0.94 + (-this.elevation / 20) * 0.18, 0.94, 1.2);
+    state.latitude = this.snapshot.latitude;
+    state.longitude = this.snapshot.longitude;
 
-    // Moon.
+    // Sun, moon and stars all go through the same projection, so the moon
+    // really does sit among the constellations.
+    // The sun and moon are clamped so their glow stays on screen even when the
+    // body itself has wandered outside the drawn azimuth range.
+    const sun = projectAltAz(this.elevation, this.azimuth);
+    state.sunX = clampProjectedX(sun);
+    state.sunY = sun.y;
+
     const now = new Date();
     const phase = computeMoonPhase(now);
     const moon = computeMoonPosition(now, this.snapshot.latitude, phase);
+    const moonPoint = projectAltAz(
+      moon.altitude,
+      // The moon model yields a position along the arc rather than a true
+      // azimuth; feed it through the same 240° panorama.
+      60 + clamp01(moon.azimuthFraction) * 240
+    );
     state.moonPhase = phase;
-    state.moonX = lerp(0.08, 0.92, clamp01(moon.azimuthFraction));
-    state.moonY = clamp(1.02 - clamp01(moon.altitude / 70) * 0.88, 0.08, 1.1);
+    state.moonX = clampProjectedX(moonPoint);
+    state.moonY = moonPoint.y;
     state.moonVisible =
       this.config.effects.moon && moon.altitude > 2 && nightFactor > 0.08 && phase > 0.03 && phase < 0.97;
   }
@@ -297,6 +310,7 @@ export class SceneManager {
     // that happens between the clouds and the viewer.
     this.sky.render(ctx, state);
     if (effects.stars) this.stars.render(ctx, state);
+    if (effects.constellations) this.constellations.render(ctx, state);
     if (effects.moon) this.moon.render(ctx, state);
     if (effects.sun) this.sun.render(ctx, state);
     if (effects.clouds) this.clouds.render(ctx, state);
