@@ -50,6 +50,8 @@ export class AuroraLayer {
   private firstFrame = true;
   /** Wall-clock timer that refreshes the computed sun position without HA. */
   private environmentTimer: number | null = null;
+  /** Checks that Aurora Glass is still winning against the page's themes. */
+  private verifyTimer: number | null = null;
 
   /** Glass options with any entity-driven preset already applied. */
   private resolvedGlass: GlassConfig | null = null;
@@ -161,6 +163,14 @@ export class AuroraLayer {
     this.updateRunState();
   }
 
+  /**
+   * An element inside the Lovelace view, used to detect a view-level theme
+   * winning over Aurora Glass. The card passes itself.
+   */
+  setGlassProbe(element: HTMLElement | null): void {
+    this.glass?.setProbe(element);
+  }
+
   updateHass(hass: HomeAssistant | undefined): void {
     if (this.destroyed) return;
     this.hass = hass;
@@ -261,6 +271,7 @@ export class AuroraLayer {
     // `sun.sun` only updates every ~30 s, and without the sun integration we
     // compute the position ourselves – refresh once a minute either way.
     this.environmentTimer = window.setInterval(this.refreshEnvironment, 60_000);
+    if (this.glass) this.verifyTimer = window.setInterval(() => this.glass?.verify(), 2_000);
   }
 
   private detachListeners(): void {
@@ -287,6 +298,11 @@ export class AuroraLayer {
     if (this.environmentTimer !== null) {
       window.clearInterval(this.environmentTimer);
       this.environmentTimer = null;
+    }
+
+    if (this.verifyTimer !== null) {
+      window.clearInterval(this.verifyTimer);
+      this.verifyTimer = null;
     }
   }
 
@@ -395,6 +411,13 @@ export class AuroraLayer {
     };
   }
 
+  /** One word for the debug overlay. */
+  private glassStatus(): string {
+    if (!this.glass || !this.activeGlass.enabled) return 'off';
+    if (this.glass.isShadowed) return `${this.activeGlass.preset} — overridden by view theme`;
+    return this.activeGlass.preset;
+  }
+
   private get activeGlass(): GlassConfig {
     return this.resolvedGlass ?? this.config.glass;
   }
@@ -491,7 +514,8 @@ export class AuroraLayer {
         this.scene.environment,
         this.performance.fps,
         this.scene.particleCount(),
-        false
+        false,
+        this.glassStatus()
       );
     }
   };
@@ -522,7 +546,8 @@ export class AuroraLayer {
       this.scene.environment,
       this.performance.fps,
       this.scene.particleCount(),
-      true
+      true,
+      this.glassStatus()
     );
   }
 }

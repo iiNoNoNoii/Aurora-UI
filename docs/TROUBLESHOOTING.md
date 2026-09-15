@@ -153,6 +153,37 @@ reference-counted, so several cards in the *same* view fight over the config.
 
 ---
 
+## Aurora Glass does nothing, and the view has its own theme
+
+**This is the most likely cause, and it is not a bug you can configure away.**
+
+Look at the view's settings (⋮ → *Edit view* → **Theme**). If a theme is set
+there, Home Assistant applies it as inline custom properties **on the view
+element** — which sits between `<html>` and every card inside that view.
+
+CSS custom properties resolve from the nearest ancestor that sets them. Aurora
+Glass writes on `<html>`; the view theme writes closer to the cards, so the
+theme wins. `!important` does not help: the cascade only decides between
+declarations on the *same* element, and these are on different ones.
+
+Aurora detects this. With `debug: true` the overlay's `glass` line reads
+*"overridden by view theme"*, and a warning appears in the browser console.
+
+Three ways out, in order of how much you keep:
+
+1. **Wrap individual cards in `custom:aurora-style`.** The wrapper sits closer
+   to the card than the view element does, so it wins over the theme. You keep
+   the theme for everything else and choose per card. This is usually the right
+   answer.
+2. **Clear the view's theme** and set your theme in your user profile instead.
+   A profile theme is applied to `<html>`, the same element Aurora writes to,
+   and Aurora reasserts itself if the theme is re-applied.
+3. **Turn Aurora Glass off** (`glass: false`) and let the theme do the card
+   styling, using Aurora only for the background.
+
+The same applies to a dashboard-level theme (*Edit dashboard* → *Raw editor* →
+`theme:`).
+
 ## Aurora Glass does nothing / cards are not blurred
 
 The blur comes from `--ha-card-backdrop-filter`. Older Home Assistant frontends

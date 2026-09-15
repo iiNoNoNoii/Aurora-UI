@@ -4,6 +4,33 @@ All notable changes to Aurora UI are documented here.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and the project uses [Semantic Versioning](https://semver.org/).
 
+## [0.6.2-alpha] – 2026-09-15
+
+### Added
+
+- **Aurora Glass now notices when it is being overridden, and says so.**
+  A theme set on a *view* is applied by Home Assistant to the view element,
+  which sits between `<html>` and every card in that view. Custom properties
+  resolve from the nearest ancestor that sets them, so the view theme wins over
+  Aurora Glass — and `!important` cannot change that, because the cascade only
+  arbitrates between declarations on the same element.
+
+  Measured rather than assumed: with a view theme in place, a plain card
+  resolves the theme's colour while a card wrapped in `custom:aurora-style`
+  resolves Aurora's, because the wrapper sits closer still.
+
+  Aurora now probes what the cards in the view actually resolve, reports
+  *"overridden by view theme"* on the debug overlay's new `glass` line, and logs
+  a one-time console warning naming the two ways out. Documented in
+  [troubleshooting](docs/TROUBLESHOOTING.md).
+
+### Fixed
+
+- Aurora Glass re-asserts its properties if something else rewrites them on
+  `<html>`. Applying a theme rewrites the same properties on the same element,
+  and the change gate would have skipped the next write because Aurora's own
+  inputs had not changed — leaving the theme in possession.
+
 ## [0.6.1-alpha] – 2026-09-15
 
 From a screenshot of a real dashboard: the toolbar stayed an opaque slab across
@@ -367,6 +394,7 @@ First working release. Everything in this list is implemented and rendering.
 - Nothing has been exercised inside a real Home Assistant yet; every check so
   far ran against a faithful mock.
 
+[0.6.2-alpha]: https://github.com/iiNoNoNoii/Aurora-UI/releases/tag/v0.6.2-alpha
 [0.6.1-alpha]: https://github.com/iiNoNoNoii/Aurora-UI/releases/tag/v0.6.1-alpha
 [0.6.0-alpha]: https://github.com/iiNoNoNoii/Aurora-UI/releases/tag/v0.6.0-alpha
 [0.5.3-alpha]: https://github.com/iiNoNoNoii/Aurora-UI/releases/tag/v0.5.3-alpha

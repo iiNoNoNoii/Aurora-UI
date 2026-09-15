@@ -52,6 +52,7 @@ class BackgroundMount {
     this.activeOwner = token;
     this.ensureMounted(config);
     this.applyGlobalStyles(config);
+    this.layer?.setGlassProbe(token instanceof HTMLElement ? token : null);
     this.layer?.updateConfig(config);
     this.layer?.updateHass(hass);
   }

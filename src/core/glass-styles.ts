@@ -55,6 +55,27 @@ export class GlassStyles {
   private active = false;
   private textActive = false;
 
+  /** The surface value we last wrote, for the verification pass. */
+  private writtenSurface = '';
+  /**
+   * An element inside the Lovelace view — the Aurora card itself. Used to see
+   * what the cards in that view *actually* resolve, which is not necessarily
+   * what we wrote on the document.
+   */
+  private probe: HTMLElement | null = null;
+  /** Set when something closer to the cards is winning. */
+  private shadowed = false;
+  private warned = false;
+
+  setProbe(element: HTMLElement | null): void {
+    this.probe = element;
+  }
+
+  /** True when a view-level theme (or similar) is overriding Aurora Glass. */
+  get isShadowed(): boolean {
+    return this.shadowed;
+  }
+
   update(scene: SceneState, glass: GlassConfig, force = false): void {
     if (!glass.enabled) {
       this.clear();
@@ -114,6 +135,7 @@ export class GlassStyles {
     const opacity = clamp01(glass.opacity * (skyIsBright ? 1.15 : 1));
     const surfaceCss = rgbToCss(surface, opacity);
 
+    this.writtenSurface = surfaceCss;
     root.setProperty('--aurora-glass-surface', surfaceCss);
     root.setProperty('--ha-card-background', surfaceCss);
     // Some cards read `--card-background-color` directly instead.
@@ -163,6 +185,50 @@ export class GlassStyles {
     }
   }
 
+  /**
+   * Check that what we wrote is what the cards actually see.
+   *
+   * Two different things can go wrong, and they need opposite responses:
+   *
+   *  - **Home Assistant overwrote us.** Applying a theme rewrites the same
+   *    properties on the same element, and our change gate would happily skip
+   *    the next write because *our* inputs did not change. Re-assert.
+   *  - **Something closer to the cards wins.** A view-level theme is applied to
+   *    the view element, which sits between `<html>` and every card in it, so
+   *    its value shadows ours no matter how important our declaration is. That
+   *    is not a fight we can win from the document — say so instead.
+   */
+  verify(): void {
+    if (!this.active || !this.writtenSurface) return;
+
+    const root = document.documentElement.style;
+    if (normalise(root.getPropertyValue('--ha-card-background')) !== normalise(this.writtenSurface)) {
+      // Someone rewrote the document properties. Force the next update through.
+      this.lastOptions = '';
+      this.lastSurface = null;
+      return;
+    }
+
+    if (!this.probe) return;
+    const seen = normalise(
+      getComputedStyle(this.probe).getPropertyValue('--ha-card-background')
+    );
+    const shadowed = seen.length > 0 && seen !== normalise(this.writtenSurface);
+
+    if (shadowed && !this.warned) {
+      this.warned = true;
+      // Worth a console line: the symptom is "Aurora Glass does nothing", and
+      // nobody would guess the view's own theme is the reason.
+      console.warn(
+        '[Aurora UI] Aurora Glass is being overridden for this view. A view-level ' +
+          'theme is applied closer to the cards than Aurora can reach, so it wins. ' +
+          'Either clear the theme in the view settings, or wrap individual cards in ' +
+          'custom:aurora-style, which sits closer still.'
+      );
+    }
+    this.shadowed = shadowed;
+  }
+
   /** Hand every managed property back to the user's theme. */
   clear(): void {
     if (!this.active && !this.textActive) return;
@@ -177,5 +243,12 @@ export class GlassStyles {
     this.lastAccent = null;
     this.lastGlow = -1;
     this.lastOptions = '';
+    this.writtenSurface = '';
+    this.shadowed = false;
   }
+}
+
+/** Custom-property values keep their source whitespace; compare without it. */
+function normalise(value: string): string {
+  return value.replace(/\s+/g, '').trim();
 }

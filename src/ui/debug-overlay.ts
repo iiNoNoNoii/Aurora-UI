@@ -44,7 +44,8 @@ export class DebugOverlay {
     environment: EnvironmentSnapshot,
     fps: number,
     particles: number,
-    paused: boolean
+    paused: boolean,
+    glass = 'off'
   ): void {
     const now = performance.now();
     if (now - this.lastUpdate < 250) return;
@@ -66,6 +67,7 @@ export class DebugOverlay {
       `moon         ${scene.moonVisible ? 'visible' : 'hidden'}  phase ${scene.moonPhase.toFixed(2)}`,
       `season       ${scene.season.name}  warmth ${scene.season.warmth.toFixed(2)}`,
       `parallax     ${scene.parallaxX.toFixed(1)} / ${scene.parallaxY.toFixed(1)} px`,
+      `glass        ${glass}`,
       `reduced mo.  ${scene.reducedMotion ? 'yes' : 'no'}`,
     ];
 

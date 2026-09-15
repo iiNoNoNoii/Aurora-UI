@@ -330,6 +330,14 @@ why it works with cards that do not exist yet.
 `plain` is the escape hatch: if dashboard-wide Aurora Glass is on and one card
 needs to look normal, wrap it in `style: plain`.
 
+> **If your view has its own theme, use Aurora Style rather than Aurora Glass.**
+> Home Assistant applies a view theme to the view element, which sits closer to
+> your cards than `<html>` — so it wins over Aurora Glass, and no amount of
+> `!important` changes that. The Aurora Style wrapper sits closer still, so it
+> wins over the theme. Aurora detects the situation and says so in the debug
+> overlay and the browser console. Details in
+> [troubleshooting](docs/TROUBLESHOOTING.md).
+
 ### Aurora Layout — a phone is not a small desktop
 
 ```yaml
