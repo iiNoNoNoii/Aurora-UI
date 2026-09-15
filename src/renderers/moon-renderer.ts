@@ -136,6 +136,10 @@ export class MoonRenderer implements Renderer {
 
       ctx.save();
       ctx.globalCompositeOperation = 'destination-out';
+      // `destination-out` erases by the *source alpha*, so this has to be fully
+      // opaque – inheriting the translucent maria fill would only dim the
+      // shadow instead of cutting it away.
+      ctx.fillStyle = 'rgba(0,0,0,1)';
       ctx.beginPath();
       // Half circle on the dark limb (top -> bottom).
       ctx.arc(cx, cy, radius + 1, -Math.PI / 2, Math.PI / 2, darkOnLeft);

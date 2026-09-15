@@ -1494,7 +1494,7 @@ class _i {
     const l = (1 - Math.cos(n * M)) / 2;
     if (l < 0.99) {
       const u = n < 0.5, p = Math.abs(1 - l * 2) * i;
-      t.save(), t.globalCompositeOperation = "destination-out", t.beginPath(), t.arc(r, o, i + 1, -Math.PI / 2, Math.PI / 2, u);
+      t.save(), t.globalCompositeOperation = "destination-out", t.fillStyle = "rgba(0,0,0,1)", t.beginPath(), t.arc(r, o, i + 1, -Math.PI / 2, Math.PI / 2, u);
       const f = u ? l < 0.5 : l >= 0.5;
       t.ellipse(
         r,

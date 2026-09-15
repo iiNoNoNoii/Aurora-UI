@@ -1,0 +1,96 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Aurora Background – moon phase check</title>
+    <style>
+      body {
+        margin: 0;
+        padding: 20px;
+        background: #05070f;
+        color: #cfe0f5;
+        font: 13px system-ui, sans-serif;
+      }
+      h3 {
+        margin: 0 0 4px;
+      }
+      p {
+        margin: 0 0 16px;
+        opacity: 0.6;
+      }
+      aurora-background {
+        display: block;
+        max-width: 520px;
+      }
+      code {
+        color: #9fd0ff;
+      }
+    </style>
+  </head>
+  <body>
+    <h3>Moon phase check</h3>
+    <p>
+      Add <code>?phase=0.125</code> to the URL. 0 = new, 0.25 = first quarter (lit on the
+      right), 0.5 = full, 0.75 = last quarter (lit on the left).
+    </p>
+    <div id="host"></div>
+
+    <script type="module">
+      import '../dist/aurora-background.js';
+
+      const SYNODIC_DAYS = 29.530588853;
+      // A real new moon: 2026-01-18 19:52 UTC.
+      const NEW_MOON_UTC = Date.UTC(2026, 0, 18, 19, 52);
+
+      const phase = Number(new URLSearchParams(location.search).get('phase') ?? 0.25);
+
+      // The moon transits (sits highest) roughly `phase * 24 h` after the sun,
+      // i.e. noon for a new moon and midnight for a full moon. Freeze the clock
+      // there so the disc is comfortably inside the canvas at every phase.
+      const day = new Date(NEW_MOON_UTC + phase * SYNODIC_DAYS * 86400000);
+      const transitHour = (12 + phase * 24) % 24;
+      const frozen = new Date(
+        day.getFullYear(),
+        day.getMonth(),
+        day.getDate(),
+        Math.floor(transitHour),
+        Math.round((transitHour % 1) * 60),
+        0
+      ).getTime();
+
+      const RealDate = Date;
+      window.Date = class extends RealDate {
+        constructor(...args) {
+          super(...(args.length ? args : [frozen]));
+        }
+        static now() {
+          return frozen;
+        }
+      };
+
+      const card = document.createElement('aurora-background');
+      card.setConfig({
+        type: 'custom:aurora-background',
+        mode: 'card',
+        height: '320px',
+        weather_entity: 'weather.demo',
+        sun_entity: 'sun.sun',
+        quality: 'ultra',
+        debug: new URLSearchParams(location.search).has('debug'),
+        effects: { clouds: false, stars: false, shooting_stars: false, sun: false },
+      });
+      card.hass = {
+        config: { latitude: 51.2, longitude: 6.8, unit_system: {} },
+        states: {
+          'sun.sun': {
+            entity_id: 'sun.sun',
+            state: 'below_horizon',
+            attributes: { elevation: -40, azimuth: 0, rising: false },
+          },
+          'weather.demo': { entity_id: 'weather.demo', state: 'clear-night', attributes: {} },
+        },
+      };
+      document.getElementById('host').appendChild(card);
+    </script>
+  </body>
+</html>

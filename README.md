@@ -203,6 +203,7 @@ npx vite
 
 - `examples/dev-preview.html` – ten sky states side by side, with an elevation slider
 - `examples/dev-background.html` – the real full-viewport mount, over mock dashboard cards
+- `examples/dev-moon.html?phase=0.25` – one moon phase at a time, clock frozen to its transit
 
 `dist/` is committed on purpose: HACS falls back to it when a release has no
 attached asset, and the `Validate` workflow fails if it drifts from `src/`.

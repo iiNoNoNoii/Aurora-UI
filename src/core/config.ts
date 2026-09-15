@@ -207,8 +207,3 @@ export function normalizeConfig(input: AuroraBackgroundConfigInput | undefined):
     },
   };
 }
-
-/** Cheap structural comparison so we only rebuild the scene on real changes. */
-export function configEquals(a: AuroraBackgroundConfig, b: AuroraBackgroundConfig): boolean {
-  return JSON.stringify(a) === JSON.stringify(b);
-}
