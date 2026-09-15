@@ -63,17 +63,33 @@ export class GlassStyles {
    * what we wrote on the document.
    */
   private probe: HTMLElement | null = null;
-  /** Set when something closer to the cards is winning. */
-  private shadowed = false;
+  /**
+   * The element that was shadowing us, once found.
+   *
+   * A theme applied to a Lovelace *view* lands on the view element, which sits
+   * between `<html>` and every card in it — closer wins, and no `!important`
+   * changes that, because the cascade only arbitrates between declarations on
+   * the same element. So Aurora stops arguing from the document and writes
+   * there as well. The element is located by walking up from Aurora's own card
+   * until we find whoever declares the property inline; no tag names, no
+   * assumptions about the frontend's structure.
+   */
+  private scopeHost: HTMLElement | null = null;
+  /**
+   * What the scope host declared before Aurora wrote over it. Escalating means
+   * overwriting part of the user's own theme; `clear()` has to put it back
+   * rather than leave the view with nothing.
+   */
+  private scopeHostOriginal = new Map<string, string>();
   private warned = false;
 
   setProbe(element: HTMLElement | null): void {
     this.probe = element;
   }
 
-  /** True when a view-level theme (or similar) is overriding Aurora Glass. */
-  get isShadowed(): boolean {
-    return this.shadowed;
+  /** `document` normally; `view` once Aurora had to escalate to beat a theme. */
+  get scope(): 'document' | 'view' {
+    return this.scopeHost ? 'view' : 'document';
   }
 
   update(scene: SceneState, glass: GlassConfig, force = false): void {
@@ -129,7 +145,7 @@ export class GlassStyles {
     this.lastOptions = options;
     this.active = true;
 
-    const root = document.documentElement.style;
+    const root = this.targets();
 
     // A brighter sky needs a more opaque card to stay readable.
     const opacity = clamp01(glass.opacity * (skyIsBright ? 1.15 : 1));
@@ -186,6 +202,30 @@ export class GlassStyles {
   }
 
   /**
+   * Every place the properties have to be written.
+   *
+   * Normally just `<html>`. When a view theme was found shadowing us, the view
+   * element joins the list — writing to both keeps cards outside that view
+   * styled too.
+   */
+  private targets(): CSSStyleDeclaration & { setProperty(name: string, value: string): void } {
+    const hosts: CSSStyleDeclaration[] = [document.documentElement.style];
+    if (this.scopeHost) hosts.push(this.scopeHost.style);
+
+    // A tiny façade so the write path below stays a straight list of
+    // setProperty calls rather than a loop around every line.
+    return {
+      setProperty(name: string, value: string): void {
+        for (const host of hosts) host.setProperty(name, value);
+      },
+      removeProperty(name: string): string {
+        for (const host of hosts) host.removeProperty(name);
+        return '';
+      },
+    } as CSSStyleDeclaration;
+  }
+
+  /**
    * Check that what we wrote is what the cards actually see.
    *
    * Two different things can go wrong, and they need opposite responses:
@@ -196,7 +236,8 @@ export class GlassStyles {
    *  - **Something closer to the cards wins.** A view-level theme is applied to
    *    the view element, which sits between `<html>` and every card in it, so
    *    its value shadows ours no matter how important our declaration is. That
-   *    is not a fight we can win from the document — say so instead.
+   *    is not a fight we can win from the document, so Aurora finds that
+   *    element and writes there as well.
    */
   verify(): void {
     if (!this.active || !this.writtenSurface) return;
@@ -213,42 +254,92 @@ export class GlassStyles {
     const seen = normalise(
       getComputedStyle(this.probe).getPropertyValue('--ha-card-background')
     );
-    const shadowed = seen.length > 0 && seen !== normalise(this.writtenSurface);
+    if (seen.length === 0 || seen === normalise(this.writtenSurface)) return;
 
-    if (shadowed && !this.warned) {
+    // Something closer to the cards is winning. Find it and write there too.
+    const host = findInlineDeclarer(this.probe, '--ha-card-background');
+    if (!host || host === this.scopeHost) return;
+
+    this.scopeHost = host;
+    // Remember the theme's own values before overwriting them.
+    this.scopeHostOriginal.clear();
+    for (const name of [...MANAGED, ...TEXT_MANAGED]) {
+      const existing = host.style.getPropertyValue(name);
+      if (existing.length > 0) this.scopeHostOriginal.set(name, existing);
+    }
+
+    // Force the next update through: our own inputs did not change, only where
+    // they need to land.
+    this.lastOptions = '';
+    this.lastSurface = null;
+
+    if (!this.warned) {
       this.warned = true;
       // Worth a console line: the symptom is "Aurora Glass does nothing", and
       // nobody would guess the view's own theme is the reason.
-      console.warn(
-        '[Aurora UI] Aurora Glass is being overridden for this view. A view-level ' +
-          'theme is applied closer to the cards than Aurora can reach, so it wins. ' +
-          'Either clear the theme in the view settings, or wrap individual cards in ' +
-          'custom:aurora-style, which sits closer still.'
+      console.info(
+        '[Aurora UI] A theme on this view was overriding Aurora Glass — a view ' +
+          'theme is applied closer to the cards than the document is. Aurora is ' +
+          'now writing to that element as well. Set glass.enabled to false, or ' +
+          'the preset to "plain", to hand the cards back to your theme.'
       );
     }
-    this.shadowed = shadowed;
   }
 
   /** Hand every managed property back to the user's theme. */
   clear(): void {
     if (!this.active && !this.textActive) return;
-    const root = document.documentElement.style;
+    const root = this.targets();
     for (const name of MANAGED) root.removeProperty(name);
     if (this.textActive) {
       for (const name of TEXT_MANAGED) root.removeProperty(name);
       this.textActive = false;
     }
+    // Escalating overwrote part of the user's own theme on the view element.
+    // Removing the property would leave the view with nothing until Home
+    // Assistant happened to re-apply; put the original declarations back.
+    if (this.scopeHost) {
+      for (const [name, value] of this.scopeHostOriginal) {
+        this.scopeHost.style.setProperty(name, value);
+      }
+      this.scopeHostOriginal.clear();
+    }
+
     this.active = false;
     this.lastSurface = null;
     this.lastAccent = null;
     this.lastGlow = -1;
     this.lastOptions = '';
     this.writtenSurface = '';
-    this.shadowed = false;
+    this.scopeHost = null;
   }
 }
 
 /** Custom-property values keep their source whitespace; compare without it. */
 function normalise(value: string): string {
   return value.replace(/\s+/g, '').trim();
+}
+
+/**
+ * Nearest ancestor of `start` that declares `property` in its own inline style,
+ * crossing shadow boundaries on the way up.
+ *
+ * Deliberately generic: it finds whoever is actually shadowing us rather than
+ * looking for `hui-view` by name, so it keeps working when the frontend
+ * restructures — and it finds nothing when nothing is in the way.
+ */
+function findInlineDeclarer(start: HTMLElement, property: string): HTMLElement | null {
+  let node: Node | null = start;
+  for (let depth = 0; depth < 40 && node; depth++) {
+    if (
+      node instanceof HTMLElement &&
+      node !== document.documentElement &&
+      node.style.getPropertyValue(property).trim().length > 0
+    ) {
+      return node;
+    }
+    const parent: Node | null = node.parentNode;
+    node = parent instanceof ShadowRoot ? parent.host : parent;
+  }
+  return null;
 }

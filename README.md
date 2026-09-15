@@ -186,6 +186,28 @@ glass:
   adaptive_text: false # also drive --primary-text-color
 ```
 
+### What if my view has its own theme?
+
+It still works. A theme set on a view is applied by Home Assistant **to the view
+element**, which sits between `<html>` and every card in it — and CSS custom
+properties resolve from the nearest ancestor that sets them. So a view theme
+beats anything written on the document, and `!important` changes nothing,
+because the cascade only arbitrates between declarations on the *same* element.
+
+Aurora checks what the cards in your view actually resolve. If a theme is
+winning, it finds that element — by walking up from its own card until it
+reaches whoever declares the property inline, so no tag names are assumed — and
+writes there too. The debug overlay shows `glass (view scope)` when this
+happened.
+
+Switching Aurora Glass off puts the theme's original values back exactly.
+
+Cards that style themselves through `--ha-card-*` — which includes Mushroom,
+the built-in cards and most of the ecosystem — pick this up automatically.
+A card that hard-codes its own background (some `button-card` configs with an
+explicit `styles: card: - background:`) will not, because nothing is reading a
+variable there; point it at `var(--aurora-card-tint)` instead.
+
 ### Switching the whole dashboard's style, live
 
 Point `preset_entity` at any entity whose state is a preset name — an
@@ -330,13 +352,10 @@ why it works with cards that do not exist yet.
 `plain` is the escape hatch: if dashboard-wide Aurora Glass is on and one card
 needs to look normal, wrap it in `style: plain`.
 
-> **If your view has its own theme, use Aurora Style rather than Aurora Glass.**
-> Home Assistant applies a view theme to the view element, which sits closer to
-> your cards than `<html>` — so it wins over Aurora Glass, and no amount of
-> `!important` changes that. The Aurora Style wrapper sits closer still, so it
-> wins over the theme. Aurora detects the situation and says so in the debug
-> overlay and the browser console. Details in
-> [troubleshooting](docs/TROUBLESHOOTING.md).
+> Use Aurora Style when you want to choose **per card** — for example to keep a
+> view theme everywhere and give three tiles a glass surface. For a whole
+> dashboard, Aurora Glass is less YAML and handles view themes on its own
+> (see [below](#what-if-my-view-has-its-own-theme)).
 
 ### Aurora Layout — a phone is not a small desktop
 

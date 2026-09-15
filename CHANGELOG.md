@@ -4,6 +4,30 @@ All notable changes to Aurora UI are documented here.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and the project uses [Semantic Versioning](https://semver.org/).
 
+## [0.6.3-alpha] – 2026-09-15
+
+### Changed
+
+- **Aurora Glass now wins against a view-level theme instead of just reporting
+  it.** 0.6.2 detected the situation and told the user to work around it; that
+  was the wrong end of the problem.
+
+  When the probe shows that the cards in a view resolve something other than
+  what Aurora wrote, Aurora locates the element responsible — by walking up from
+  its own card until it finds whoever declares the property inline, so no
+  frontend tag names are assumed and nothing is found when nothing is in the
+  way — and writes its properties there as well. The debug overlay's `glass`
+  line reads `(view scope)` when that has happened.
+
+  Verified end to end against a simulated view theme: the cards keep Aurora's
+  surface instead of flipping to the theme's colour.
+
+- **Disabling Glass restores the theme exactly.** Escalating means overwriting
+  part of the user's own theme on the view element, so the original inline
+  declarations are captured first and put back on `clear()` — switching the
+  preset to `plain` returns the view to precisely the value the theme had set,
+  rather than leaving it with nothing until Home Assistant happens to reapply.
+
 ## [0.6.2-alpha] – 2026-09-15
 
 ### Added
@@ -394,6 +418,7 @@ First working release. Everything in this list is implemented and rendering.
 - Nothing has been exercised inside a real Home Assistant yet; every check so
   far ran against a faithful mock.
 
+[0.6.3-alpha]: https://github.com/iiNoNoNoii/Aurora-UI/releases/tag/v0.6.3-alpha
 [0.6.2-alpha]: https://github.com/iiNoNoNoii/Aurora-UI/releases/tag/v0.6.2-alpha
 [0.6.1-alpha]: https://github.com/iiNoNoNoii/Aurora-UI/releases/tag/v0.6.1-alpha
 [0.6.0-alpha]: https://github.com/iiNoNoNoii/Aurora-UI/releases/tag/v0.6.0-alpha

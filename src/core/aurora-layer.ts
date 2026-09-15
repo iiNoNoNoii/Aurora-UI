@@ -414,8 +414,9 @@ export class AuroraLayer {
   /** One word for the debug overlay. */
   private glassStatus(): string {
     if (!this.glass || !this.activeGlass.enabled) return 'off';
-    if (this.glass.isShadowed) return `${this.activeGlass.preset} — overridden by view theme`;
-    return this.activeGlass.preset;
+    const preset = this.activeGlass.preset;
+    // `view scope` means Aurora found a view theme shadowing it and escalated.
+    return this.glass.scope === 'view' ? `${preset} (view scope)` : preset;
   }
 
   private get activeGlass(): GlassConfig {

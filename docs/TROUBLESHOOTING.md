@@ -153,36 +153,30 @@ reference-counted, so several cards in the *same* view fight over the config.
 
 ---
 
-## Aurora Glass does nothing, and the view has its own theme
+## My view has its own theme — does Aurora Glass still work?
 
-**This is the most likely cause, and it is not a bug you can configure away.**
+Yes, since 0.6.3, and it is worth understanding what happens.
 
-Look at the view's settings (⋮ → *Edit view* → **Theme**). If a theme is set
-there, Home Assistant applies it as inline custom properties **on the view
-element** — which sits between `<html>` and every card inside that view.
+A theme set on a view (⋮ → *Edit view* → **Theme**) is applied by Home
+Assistant as inline custom properties **on the view element**, which sits
+between `<html>` and every card in that view. CSS custom properties resolve
+from the nearest ancestor that sets them, so a view theme beats anything Aurora
+writes on the document — and `!important` does not change that, because the
+cascade only arbitrates between declarations on the *same* element.
 
-CSS custom properties resolve from the nearest ancestor that sets them. Aurora
-Glass writes on `<html>`; the view theme writes closer to the cards, so the
-theme wins. `!important` does not help: the cascade only decides between
-declarations on the *same* element, and these are on different ones.
+Aurora therefore checks what the cards in the view actually resolve. If a theme
+is winning, it locates that element by walking up from its own card until it
+finds whoever declares the property inline, and writes there as well. The debug
+overlay's `glass` line then reads `glass (view scope)`, and a line appears in
+the browser console the first time.
 
-Aurora detects this. With `debug: true` the overlay's `glass` line reads
-*"overridden by view theme"*, and a warning appears in the browser console.
+Turning Aurora Glass off — `glass: false`, or a preset of `plain`, or the
+dropdown if you use `preset_entity` — puts the theme's original values back
+exactly as they were.
 
-Three ways out, in order of how much you keep:
-
-1. **Wrap individual cards in `custom:aurora-style`.** The wrapper sits closer
-   to the card than the view element does, so it wins over the theme. You keep
-   the theme for everything else and choose per card. This is usually the right
-   answer.
-2. **Clear the view's theme** and set your theme in your user profile instead.
-   A profile theme is applied to `<html>`, the same element Aurora writes to,
-   and Aurora reasserts itself if the theme is re-applied.
-3. **Turn Aurora Glass off** (`glass: false`) and let the theme do the card
-   styling, using Aurora only for the background.
-
-The same applies to a dashboard-level theme (*Edit dashboard* → *Raw editor* →
-`theme:`).
+If you would rather keep the theme and pick per card, wrap individual cards in
+`custom:aurora-style` instead: the wrapper sits closer still, so it wins over
+both.
 
 ## Aurora Glass does nothing / cards are not blurred
 
