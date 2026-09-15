@@ -74,7 +74,8 @@
     border: true
     glow: 0.8
     radius: 18 # -1 keeps your theme's
-    adaptive_text: false # also drive --primary-text-color
+    contrast: 4.5 # min text contrast to hold; Aurora raises opacity to reach it
+    adaptive_text: true # raise the theme's text contrast on the glass
 
   background:
     transparent_lovelace: true # make the dashboard surface see-through

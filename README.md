@@ -165,6 +165,30 @@ weather_entity: weather.home
 glass: true
 ```
 
+Two things it does on its own, because a glass card is only worth having if you
+can still read it:
+
+**The surface follows your theme, not the sky.** A light panel over a dark sky
+looks milky and hides the thing it is meant to float over. A dark theme gets a
+dark translucent surface with a light hairline; a light theme gets the reverse.
+Aurora reads your theme's own `--primary-text-color` to decide, so a custom dark
+theme works even when Home Assistant reports light mode.
+
+**Opacity is solved for, not guessed.** A translucent card over a bright midday
+sky composites to a mid-tone, and mid-tone is where text loses. Aurora
+composites the surface over the sky, composites the text over that, and raises
+the opacity until the *secondary* text — the faintest thing on the card — clears
+`glass.contrast` (default `4.5`, the WCAG AA ratio for normal text). Measured:
+
+| Sky | Opacity | Primary text | Secondary text |
+|---|---|---|---|
+| Clear night | 0.38, as configured | 15.9:1 | 10.0:1 |
+| Midday sun | 0.79, raised | 6.9:1 | 5.0:1 |
+
+So the glass is barely there at night and more substantial at noon, which is
+also how real glass behaves. Set `contrast: 0` to switch the adjustment off and
+keep your opacity exactly as written.
+
 Pick a preset — the same five Aurora Style uses:
 
 ```yaml
@@ -183,8 +207,15 @@ glass:
   border: true
   glow: 0.8 # ambient glow around cards, 0–2
   radius: 18 # corner radius in px, -1 keeps your theme's
-  adaptive_text: false # also drive --primary-text-color
+  contrast: 4.5 # minimum text contrast to hold; 0 disables the adjustment
+  adaptive_text: true # raise the theme's text contrast on the glass
 ```
+
+`adaptive_text` keeps your theme's polarity and raises the contrast of its text
+colours — the secondary one in particular, which a theme picks against its own
+solid cards and which is the first thing to become unreadable on glass. When
+Aurora has scoped itself to a view it writes the text colours there only, so
+dialogs and the sidebar keep your theme untouched.
 
 ### What if my view has its own theme?
 

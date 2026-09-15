@@ -1,6 +1,6 @@
 import type { GlassConfig, RGB, SceneState } from './types';
-import { colorDistanceSq, luminance, mixRgb, rgbToCss } from './color';
-import { clamp01, lerp } from './math';
+import { colorDistanceSq, hexToRgb, luminance, mixRgb, rgbToCss } from './color';
+import { clamp01 } from './math';
 
 /**
  * Aurora Glass.
@@ -83,8 +83,32 @@ export class GlassStyles {
   private scopeHostOriginal = new Map<string, string>();
   private warned = false;
 
+  /** `hass.themes.darkMode`, used only when the text colour cannot be read. */
+  private darkModeHint: boolean | undefined;
+
   setProbe(element: HTMLElement | null): void {
     this.probe = element;
+  }
+
+  setDarkModeHint(value: boolean | undefined): void {
+    this.darkModeHint = value;
+  }
+
+  /**
+   * Is the surrounding theme dark?
+   *
+   * Read from the theme's own primary text colour rather than from
+   * `hass.themes.darkMode`, because a custom theme can be dark while Home
+   * Assistant still reports light mode — and it is the text Aurora has to stay
+   * readable against. Light text means a dark theme.
+   */
+  private isDarkTheme(): boolean {
+    const element = this.probe ?? document.documentElement;
+    const declared = getComputedStyle(element).getPropertyValue('--primary-text-color');
+    const parsed = parseCssColor(declared);
+    if (parsed) return luminance(parsed) > 128;
+    if (typeof this.darkModeHint === 'boolean') return this.darkModeHint;
+    return true;
   }
 
   /** `document` normally; `view` once Aurora had to escalate to beat a theme. */
@@ -101,14 +125,19 @@ export class GlassStyles {
     const now = performance.now();
     if (!force && now - this.lastWrite < MIN_INTERVAL_MS) return;
 
-    // The surface is the sky's ambient colour pushed toward the near-black or
-    // near-white end, so cards keep separating from the background at noon and
-    // at midnight alike.
-    const skyIsBright = luminance(scene.palette.middle) > 145;
+    // The surface follows the THEME's polarity, not the sky's.
+    //
+    // Inverting against the sky — a light card over a dark sky — was the
+    // original design, on contrast grounds. It looks milky: a pale panel at any
+    // useful opacity hides the thing it is supposed to be floating over, and
+    // that is the whole point of the effect. Every dark interface that does
+    // this well uses a *dark* translucent surface with a light hairline; the
+    // contrast comes from the border and the text, not from flipping the panel.
+    const darkTheme = this.isDarkTheme();
     const surface = mixRgb(
       scene.palette.ambient,
-      skyIsBright ? [14, 18, 27] : [226, 236, 252],
-      0.7
+      darkTheme ? [10, 13, 20] : [240, 245, 252],
+      0.78
     );
     const accent = scene.palette.sunGlow;
     const glowStrength =
@@ -123,6 +152,7 @@ export class GlassStyles {
       glass.radius,
       glass.border,
       glass.adaptive_text,
+      glass.contrast,
     ].join('|');
 
     if (
@@ -147,8 +177,30 @@ export class GlassStyles {
 
     const root = this.targets();
 
-    // A brighter sky needs a more opaque card to stay readable.
-    const opacity = clamp01(glass.opacity * (skyIsBright ? 1.15 : 1));
+    // Opacity is *solved for*, not guessed.
+    //
+    // A translucent card over a bright midday sky composites to a mid-tone, and
+    // mid-tone is where text of either polarity loses. Measured on a noon sky,
+    // a fixed opacity gave 3.3:1 for the primary text and 2.6:1 for the
+    // secondary — both under the 4.5:1 that WCAG AA asks for normal text, and
+    // exactly the "hard to read" that gets reported.
+    //
+    // So Aurora composites the surface over the sky behind it, composites the
+    // text over that, and raises the opacity until the *secondary* text — the
+    // faintest thing on the card, and the one carrying every reading — clears
+    // the contrast target. On a dark night sky the configured value already
+    // passes and nothing is added.
+    const behind = brighterOf(scene.palette.middle, scene.palette.lower);
+    const textColour: RGB = darkTheme ? [244, 248, 255] : [14, 19, 28];
+    const secondaryAlpha = darkTheme ? 0.78 : 0.72;
+    const opacity = solveOpacity(
+      glass.opacity,
+      surface,
+      behind,
+      textColour,
+      secondaryAlpha,
+      glass.contrast
+    );
     const surfaceCss = rgbToCss(surface, opacity);
 
     this.writtenSurface = surfaceCss;
@@ -164,16 +216,20 @@ export class GlassStyles {
 
     if (glass.border) {
       root.setProperty('--ha-card-border-width', '1px');
+      // On a dark surface the hairline is what separates the card from the sky,
+      // so it carries more weight than it does on a light one.
       root.setProperty(
         '--ha-card-border-color',
-        rgbToCss(skyIsBright ? [255, 255, 255] : [255, 255, 255], skyIsBright ? 0.3 : 0.16)
+        rgbToCss(darkTheme ? [255, 255, 255] : [20, 26, 38], darkTheme ? 0.16 : 0.12)
       );
     } else {
       root.setProperty('--ha-card-border-width', '0px');
       root.setProperty('--ha-card-border-color', 'transparent');
     }
 
-    const depth = `0 6px 24px rgba(0,0,0,${(0.18 + (skyIsBright ? 0.06 : 0.14)).toFixed(3)})`;
+    // A dark card needs a deeper drop shadow to lift off the sky than a light
+    // one does.
+    const depth = `0 6px 24px rgba(0,0,0,${(darkTheme ? 0.3 : 0.18).toFixed(3)})`;
     const glow =
       glowStrength > 0.01
         ? `, 0 0 36px ${rgbToCss(accent, clamp01(glowStrength * 0.16))}`
@@ -186,19 +242,38 @@ export class GlassStyles {
       root.removeProperty('--ha-card-border-radius');
     }
 
-    // Opt-in, because it reaches beyond cards into dialogs and the sidebar.
+    // Text.
+    //
+    // A theme picks its text colours against its own solid cards. Once the card
+    // is translucent and a sky is showing through, the secondary colour in
+    // particular — the one carrying every temperature and "in 6 days" — often
+    // no longer has the contrast it was chosen for. So Aurora keeps the theme's
+    // polarity and raises the contrast rather than inventing a colour.
     if (glass.adaptive_text) {
-      const text: RGB = skyIsBright ? [16, 21, 31] : [240, 245, 255];
-      root.setProperty('--primary-text-color', rgbToCss(text));
-      root.setProperty(
-        '--secondary-text-color',
-        rgbToCss(mixRgb(text, surface, 0.35), lerp(0.75, 0.85, clamp01(glowStrength)))
-      );
+      const text: RGB = darkTheme ? [244, 248, 255] : [14, 19, 28];
+      const textTarget = this.textTargets();
+      textTarget.setProperty('--primary-text-color', rgbToCss(text));
+      // Deliberately strong: a dim secondary is the single most common
+      // readability complaint on a glass card.
+      textTarget.setProperty('--secondary-text-color', rgbToCss(text, darkTheme ? 0.78 : 0.72));
       this.textActive = true;
     } else if (this.textActive) {
-      for (const name of TEXT_MANAGED) root.removeProperty(name);
+      for (const name of TEXT_MANAGED) this.textTargets().removeProperty(name);
       this.textActive = false;
     }
+  }
+
+  /**
+   * Where the text colours go.
+   *
+   * Preferably only the element Aurora escalated to — normally the Lovelace
+   * view — because `--primary-text-color` reaches beyond cards into dialogs and
+   * the sidebar, and there is no card-scoped equivalent. Scoping it to the view
+   * keeps the rest of Home Assistant on the user's own theme. Without a scope
+   * host there is nowhere narrower than the document to write.
+   */
+  private textTargets(): CSSStyleDeclaration {
+    return this.scopeHost ? this.scopeHost.style : document.documentElement.style;
   }
 
   /**
@@ -318,6 +393,107 @@ export class GlassStyles {
 /** Custom-property values keep their source whitespace; compare without it. */
 function normalise(value: string): string {
   return value.replace(/\s+/g, '').trim();
+}
+
+function brighterOf(a: RGB, b: RGB): RGB {
+  return luminance(a) >= luminance(b) ? a : b;
+}
+
+/** WCAG relative luminance, 0..1, from sRGB 0..255. */
+function relativeLuminance(c: RGB): number {
+  const channel = (v: number): number => {
+    const s = clamp01(v / 255);
+    return s <= 0.03928 ? s / 12.92 : Math.pow((s + 0.055) / 1.055, 2.4);
+  };
+  return 0.2126 * channel(c[0]) + 0.7152 * channel(c[1]) + 0.0722 * channel(c[2]);
+}
+
+function contrastRatio(a: RGB, b: RGB): number {
+  const la = relativeLuminance(a);
+  const lb = relativeLuminance(b);
+  const [hi, lo] = la > lb ? [la, lb] : [lb, la];
+  return (hi + 0.05) / (lo + 0.05);
+}
+
+/** Never fully opaque: past this it has stopped being glass. */
+const MAX_SOLVED_OPACITY = 0.94;
+
+/**
+ * The lowest opacity at or above `wanted` that still clears `target` contrast
+ * between the card and the secondary text on it.
+ *
+ * Compositing happens in sRGB (that is what the browser does) while contrast is
+ * defined on linearised luminance, so there is no tidy closed form. A dozen
+ * bisection steps cost nothing at a few writes per second and are exact to
+ * well under one part in a thousand.
+ */
+function solveOpacity(
+  wanted: number,
+  surface: RGB,
+  behind: RGB,
+  text: RGB,
+  textAlpha: number,
+  target: number
+): number {
+  if (target <= 0) return clamp01(wanted);
+
+  const passes = (alpha: number): boolean => {
+    const card = mixRgb(behind, surface, alpha);
+    const secondary = mixRgb(card, text, textAlpha);
+    return contrastRatio(secondary, card) >= target;
+  };
+
+  let lo = clamp01(wanted);
+  if (passes(lo)) return lo;
+
+  let hi = MAX_SOLVED_OPACITY;
+  // Even a nearly solid card cannot always reach the target; take the best.
+  if (!passes(hi)) return hi;
+
+  for (let i = 0; i < 14; i++) {
+    const mid = (lo + hi) / 2;
+    if (passes(mid)) hi = mid;
+    else lo = mid;
+  }
+  return hi;
+}
+
+/**
+ * Resolve any CSS colour — hex, `rgb()`, `hsl()`, a named colour — to RGB.
+ *
+ * A 2D context normalises whatever it is handed into `#rrggbb` or
+ * `rgba(...)`, and rejects anything invalid by leaving the previous value in
+ * place. That makes it a complete, spec-accurate parser for free.
+ */
+let colorProbeCtx: CanvasRenderingContext2D | null | undefined;
+
+function parseCssColor(value: string): RGB | null {
+  const text = value.trim();
+  if (!text) return null;
+
+  if (colorProbeCtx === undefined) {
+    colorProbeCtx = document.createElement('canvas').getContext('2d');
+  }
+  const ctx = colorProbeCtx;
+  if (!ctx) return null;
+
+  // A known-good sentinel: if the assignment is rejected, this survives and we
+  // can tell the difference between "parsed to black" and "not a colour".
+  ctx.fillStyle = '#000000';
+  ctx.fillStyle = text;
+  const first = ctx.fillStyle;
+  ctx.fillStyle = '#ffffff';
+  ctx.fillStyle = text;
+  if (first !== ctx.fillStyle) return null;
+
+  const resolved = String(first);
+  if (resolved.startsWith('#')) return hexToRgb(resolved);
+
+  const match = resolved.match(/rgba?\(([^)]+)\)/);
+  if (!match) return null;
+  const parts = match[1].split(',').map((p) => Number.parseFloat(p));
+  if (parts.length < 3 || parts.some((n) => !Number.isFinite(n))) return null;
+  return [parts[0], parts[1], parts[2]];
 }
 
 /**

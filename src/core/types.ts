@@ -148,6 +148,13 @@ export interface GlassConfig {
   /** Card corner radius in px; negative leaves the theme's value alone. */
   radius: number;
   /**
+   * Minimum text contrast ratio to hold on the card, WCAG style. Aurora
+   * raises the surface opacity until the secondary text clears it, so a card
+   * stays readable over a bright midday sky. 0 disables the adjustment and
+   * leaves opacity exactly as configured.
+   */
+  contrast: number;
+  /**
    * Also drive `--primary-text-color` / `--secondary-text-color`. Off by
    * default because those reach beyond cards into dialogs and the sidebar.
    */

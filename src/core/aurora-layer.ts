@@ -174,6 +174,7 @@ export class AuroraLayer {
   updateHass(hass: HomeAssistant | undefined): void {
     if (this.destroyed) return;
     this.hass = hass;
+    this.glass?.setDarkModeHint(hass?.themes?.darkMode);
     this.refreshEnvironment();
   }
 

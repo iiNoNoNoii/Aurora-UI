@@ -4,6 +4,48 @@ All notable changes to Aurora UI are documented here.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and the project uses [Semantic Versioning](https://semver.org/).
 
+## [0.6.4-alpha] – 2026-09-15
+
+Two readability problems from a photograph of a real dashboard: the cards were
+milky and swallowed the sky, and the secondary text — every temperature, every
+"in 6 days" — was barely legible.
+
+### Fixed
+
+- **The glass surface was inverted.** It mixed the sky's ambient colour toward
+  *white* on a dark sky, on contrast grounds. That is what made it milky: a pale
+  panel at any useful opacity hides the thing it is supposed to be floating
+  over. The surface now follows the **theme's** polarity — a dark theme gets a
+  dark translucent surface with a light hairline, which is what every dark
+  interface that does this well uses. Polarity is read from the theme's own
+  `--primary-text-color`, so a custom dark theme works even when Home Assistant
+  reports light mode; `hass.themes.darkMode` is only the fallback.
+
+- **Opacity is now solved for rather than guessed.** A translucent card over a
+  bright sky composites to a mid-tone, and mid-tone is where text of either
+  polarity loses. Aurora composites the surface over the sky behind it,
+  composites the text over that, and bisects for the lowest opacity at which the
+  *secondary* text clears the new `glass.contrast` target (default 4.5, the WCAG
+  AA ratio for normal text; 0 disables).
+
+  Measured, on the same night sky, for the secondary text: **1.24:1 before,
+  6.29:1 after** — the old value was effectively invisible, which is exactly
+  what was reported. At midday the solver raises opacity from 0.43 to 0.79 and
+  lifts contrast from 2.63:1 to 4.98:1, while a clear night stays at the
+  configured 0.38 and needs no help at all.
+
+### Changed
+
+- `adaptive_text` now defaults to **on**. A theme picks its text colours against
+  its own solid cards; once the card is translucent those colours are no longer
+  the ones it chose. Aurora keeps the theme's polarity and raises the contrast
+  rather than inventing a colour — and when it has scoped itself to a view, the
+  text colours are written *there only*, so dialogs and the sidebar keep the
+  user's theme.
+- Preset opacities lowered so more sky shows through, now that the surface is
+  dark: `glass` 0.45 → 0.38, `frosted` 0.72 → 0.58, `minimal` 0.55 → 0.42.
+  The solver raises them again where a bright sky needs it.
+
 ## [0.6.3-alpha] – 2026-09-15
 
 ### Changed
@@ -418,6 +460,7 @@ First working release. Everything in this list is implemented and rendering.
 - Nothing has been exercised inside a real Home Assistant yet; every check so
   far ran against a faithful mock.
 
+[0.6.4-alpha]: https://github.com/iiNoNoNoii/Aurora-UI/releases/tag/v0.6.4-alpha
 [0.6.3-alpha]: https://github.com/iiNoNoNoii/Aurora-UI/releases/tag/v0.6.3-alpha
 [0.6.2-alpha]: https://github.com/iiNoNoNoii/Aurora-UI/releases/tag/v0.6.2-alpha
 [0.6.1-alpha]: https://github.com/iiNoNoNoii/Aurora-UI/releases/tag/v0.6.1-alpha

@@ -34,15 +34,15 @@ export const SURFACE_PRESET_NAMES: SurfacePreset[] = [
 
 export const SURFACE_PRESETS: Record<SurfacePreset, SurfaceOptions> = {
   /** Translucent and blurred – the Aurora default. */
-  glass: { blur: 14, opacity: 0.45, saturate: 1.4, glow: 0.8, radius: 18, border: true },
+  glass: { blur: 16, opacity: 0.38, saturate: 1.5, glow: 0.8, radius: 18, border: true },
   /** Heavier blur, more opaque. Easier to read over a busy or bright sky. */
-  frosted: { blur: 26, opacity: 0.72, saturate: 1.15, glow: 0.3, radius: 20, border: true },
+  frosted: { blur: 30, opacity: 0.58, saturate: 1.2, glow: 0.3, radius: 20, border: true },
   /** Solid, but still takes the sky's colour. No blur cost. */
-  tinted: { blur: 0, opacity: 0.88, saturate: 1, glow: 0.5, radius: 16, border: false },
+  tinted: { blur: 0, opacity: 0.82, saturate: 1, glow: 0.5, radius: 16, border: false },
   /** Almost no surface: a hairline and a whisper of blur. */
   outline: { blur: 6, opacity: 0.1, saturate: 1.1, glow: 0.25, radius: 16, border: true },
   /** Flat, borderless, no glow. Quiet. */
-  minimal: { blur: 10, opacity: 0.55, saturate: 1, glow: 0, radius: 14, border: false },
+  minimal: { blur: 12, opacity: 0.42, saturate: 1, glow: 0, radius: 14, border: false },
   /** Hand everything back to the user's theme. */
   plain: { blur: 0, opacity: 1, saturate: 1, glow: 0, radius: -1, border: true },
 };

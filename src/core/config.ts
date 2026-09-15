@@ -268,7 +268,8 @@ export function normalizeConfig(input: AuroraBackgroundConfigInput | undefined):
       border: bool(glass.border, preset.border),
       glow: num(glass.glow, preset.glow, 0, 2),
       radius: num(glass.radius, preset.radius, -1, 80),
-      adaptive_text: bool(glass.adaptive_text, false),
+      contrast: num(glass.contrast, 4.5, 0, 21),
+      adaptive_text: bool(glass.adaptive_text, true),
     },
   };
 }
