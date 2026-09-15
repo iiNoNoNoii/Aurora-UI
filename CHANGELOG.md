@@ -4,6 +4,44 @@ All notable changes to Aurora Background are documented here.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and the project uses [Semantic Versioning](https://semver.org/).
 
+## [0.5.1-alpha] – 2026-09-15
+
+Clouds rewritten, after a user screen recording showed what they actually
+looked like on a phone: a scatter of separate translucent discs and, at small
+sizes, a row of dots.
+
+### Fixed
+
+- **Clouds are built as a silhouette now.** Opaque lobes are unioned into one
+  shape and then blurred in a single pass, instead of stacking soft translucent
+  blobs. Translucent blobs never merge — they stay legible as discs, and where
+  two of them drift across each other the overlap brightens and dims. That
+  shimmer is what reads as flickering.
+- Lobes sit at regular intervals with jitter rather than at random positions.
+  Random placement leaves gaps, which is why thin stratus sprites looked like a
+  dotted line.
+- **Cloud size now follows the viewport width**, with a height cap. It used to
+  be derived from a height reference times the aspect ratio, which made a
+  single stratus sheet wider than a phone screen.
+- **Each cloud wraps over its own width** instead of over one span sized for
+  the largest possible cloud. The shared span parked roughly three quarters of
+  the field off-screen at any moment, so an overcast sky showed a handful of
+  lonely puffs.
+- **Cloudiness drives size as well as count.** An overcast sky is not a clear
+  sky with more small clouds in it.
+- Cloud re-tinting now triggers at ~2 per channel instead of ~6, rate-limited
+  to five times a second. The coarse threshold made clouds change colour in
+  visible steps while the sky behind them moved continuously.
+- A quality change no longer teleports every cloud back to its seeded starting
+  position; drift is carried across the rebuild.
+- Fixed a `destination-in` mask in the sprite builder that filled only the
+  bottom strip and therefore erased the whole cloud above it.
+
+### Added
+
+- `examples/dev-clouds.html` – renders the raw cloud sprites at full size
+  against a light and a dark sky, which is how the above was diagnosed.
+
 ## [0.5.0-alpha] – 2026-09-15
 
 Aurora Cards, and the project becomes a suite.
@@ -161,6 +199,7 @@ First working release. Everything in this list is implemented and rendering.
 - Nothing has been exercised inside a real Home Assistant yet; every check so
   far ran against a faithful mock.
 
+[0.5.1-alpha]: https://github.com/iiNoNoNoii/Aurora-UI/releases/tag/v0.5.1-alpha
 [0.5.0-alpha]: https://github.com/iiNoNoNoii/Aurora-UI/releases/tag/v0.5.0-alpha
 [0.4.0-alpha]: https://github.com/iiNoNoNoii/Aurora-UI/releases/tag/v0.4.0-alpha
 [0.3.0-alpha]: https://github.com/iiNoNoNoii/Aurora-UI/releases/tag/v0.3.0-alpha

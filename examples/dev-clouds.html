@@ -1,0 +1,94 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Aurora UI – cloud sprite bench</title>
+    <style>
+      body {
+        margin: 0;
+        padding: 18px;
+        background: #0b1220;
+        color: #cfe0f5;
+        font: 13px system-ui, sans-serif;
+      }
+      h3 {
+        margin: 0 0 4px;
+      }
+      p {
+        margin: 0 0 16px;
+        opacity: 0.6;
+      }
+      .sheet {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 14px;
+        margin-bottom: 22px;
+      }
+      figure {
+        margin: 0;
+      }
+      canvas {
+        width: 100%;
+        display: block;
+        border-radius: 8px;
+      }
+      figcaption {
+        margin-top: 5px;
+        font-family: ui-monospace, Menlo, Consolas, monospace;
+        font-size: 11px;
+        opacity: 0.65;
+      }
+      .swatch {
+        background: linear-gradient(180deg, #2b6fc4, #8fc0e8);
+      }
+      .dark {
+        background: linear-gradient(180deg, #111a2b, #2a3550);
+      }
+    </style>
+  </head>
+  <body>
+    <h3>Cloud sprite bench</h3>
+    <p>
+      Renders the raw sprites at full size against a light and a dark sky. Requires the Vite
+      dev server (<code>npx vite</code>) – it imports TypeScript directly.
+    </p>
+    <div class="sheet" id="sheet"></div>
+
+    <script type="module">
+      import { CloudRenderer } from '../src/renderers/cloud-renderer.ts';
+
+      // The renderer only needs the quality block to build its sprites.
+      const scene = {
+        quality: { cloudSpriteSize: 360, cloudCount: 6, cloudLayers: 3 },
+      };
+
+      const renderer = new CloudRenderer();
+      renderer.setup(scene);
+
+      const sheet = document.getElementById('sheet');
+
+      renderer.base.forEach((sprite, index) => {
+        for (const mode of ['swatch', 'dark']) {
+          const fig = document.createElement('figure');
+          const canvas = document.createElement('canvas');
+          const w = sprite.canvas.width;
+          const h = sprite.canvas.height;
+          canvas.width = w;
+          canvas.height = Math.round(h * 1.5);
+          canvas.className = mode;
+
+          const ctx = canvas.getContext('2d');
+          ctx.drawImage(sprite.canvas, 0, Math.round(h * 0.25));
+
+          const cap = document.createElement('figcaption');
+          cap.textContent = `#${index}  ${w}x${h}  aspect ${sprite.aspect}  span x${sprite.spanScale}  (${mode})`;
+          fig.append(canvas, cap);
+          sheet.appendChild(fig);
+        }
+      });
+
+      window.__spriteCount = renderer.base.length;
+    </script>
+  </body>
+</html>

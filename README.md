@@ -350,6 +350,7 @@ npx vite
 - `examples/dev-background.html` – the real full-viewport mount, over mock dashboard cards
 - `examples/dev-cards.html` – Light and Climate against a mock Home Assistant whose service calls really mutate state
 - `examples/dev-moon.html?phase=0.25` – one moon phase at a time, clock frozen to its transit
+- `examples/dev-clouds.html` – the raw cloud sprites at full size, on a light and a dark sky
 - `examples/dev-lightning.html` – drives the lightning renderer from source on a fixed clock
 
 `dist/` is committed on purpose: HACS falls back to it when a release has no
