@@ -1,19 +1,24 @@
-# Aurora Background
+# Aurora UI
 
-> Part of **Aurora UI** – a modular UI suite for Home Assistant.
+A modular UI suite for Home Assistant. One HACS repository, one resource, three
+cards so far:
 
-A procedural, weather- and sun-aware animated background for Home Assistant
-dashboards. No wallpaper JPEGs, no video loops: the sky is drawn on a canvas and
-interpolated continuously from your actual solar elevation and weather entity,
-so dawn really does fade through violet and rose into blue.
+| Card | What it is |
+|---|---|
+| **Aurora Background** | A procedural, weather- and sun-aware animated sky behind the whole dashboard. No wallpaper JPEGs, no video loops — the sky is drawn on a canvas and interpolated continuously from your actual solar elevation, so dawn really does fade through violet and rose into blue. |
+| **Aurora Light** | A light tile that takes the bulb's own colour. Drag for brightness, tap to toggle, hold for more info. |
+| **Aurora Climate** | A thermostat with a large target temperature and a surface that shifts from blue to amber as it warms. |
 
-[![Validate](https://github.com/iinononoii/aurora-background/actions/workflows/validate.yml/badge.svg)](https://github.com/iinononoii/aurora-background/actions/workflows/validate.yml)
+Plus **Aurora Glass**, which turns every Lovelace card into a translucent
+surface that drifts with the sky.
+
+[![Validate](https://github.com/iiNoNoNoii/Aurora-UI/actions/workflows/validate.yml/badge.svg)](https://github.com/iiNoNoNoii/Aurora-UI/actions/workflows/validate.yml)
 [![hacs](https://img.shields.io/badge/HACS-custom-41BDF5.svg)](https://hacs.xyz)
-[![license](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+[![license](https://img.shields.io/badge/license-AGPL--3.0-blue.svg)](LICENSE)
 
 ---
 
-## What it does
+## Aurora Background
 
 | | |
 |---|---|
@@ -31,22 +36,22 @@ so dawn really does fade through violet and rose into blue.
 ## Install via HACS
 
 1. **HACS → three-dot menu (top right) → Custom repositories**
-2. Repository: `https://github.com/iinononoii/aurora-background`
+2. Repository: `https://github.com/iiNoNoNoii/Aurora-UI`
    Type/Category: **Dashboard** (older HACS calls this *Lovelace* or *Plugin*)
 3. **Add**, then open **Aurora Background** and click **Download**.
 4. HACS registers the dashboard resource for you. If it did not, add it manually:
    **Settings → Dashboards → three-dot menu → Resources → Add resource**
-   - URL: `/hacsfiles/aurora-background/aurora-background.js`
+   - URL: `/hacsfiles/Aurora-UI/aurora-ui.js`
    - Type: **JavaScript module**
 5. **Hard-reload the browser** (`Ctrl`/`Cmd` + `Shift` + `R`).
 
 <details>
 <summary>Manual install without HACS</summary>
 
-1. Download `aurora-background.js` from the
-   [latest release](https://github.com/iinononoii/aurora-background/releases/latest).
-2. Copy it to `<config>/www/aurora-background.js` (create `www/` if it is missing).
-3. Add the resource `/local/aurora-background.js` as **JavaScript module**.
+1. Download `aurora-ui.js` from the
+   [latest release](https://github.com/iiNoNoNoii/Aurora-UI/releases/latest).
+2. Copy it to `<config>/www/aurora-ui.js` (create `www/` if it is missing).
+3. Add the resource `/local/aurora-ui.js` as **JavaScript module**.
 4. Hard-reload the browser.
 
 </details>
@@ -161,6 +166,72 @@ text gets hard to read.
 > Blur relies on `--ha-card-backdrop-filter`. On a Home Assistant version that
 > does not read it, cards stay translucent but unblurred.
 
+---
+
+## Aurora Cards
+
+Both cards work with or without Aurora Background — they use `--aurora-*` when
+it is there and fall back to your theme when it is not. Both appear in the card
+picker with a visual editor.
+
+### Aurora Light
+
+```yaml
+type: custom:aurora-light
+entity: light.living_room
+```
+
+| | |
+|---|---|
+| Drag across the card | brightness |
+| Tap | toggle |
+| Tap the icon | toggle |
+| Hold | more-info dialog |
+
+The tile takes the light's real colour — `rgb_color`, or `color_temp_kelvin`
+converted to RGB — so a column of lights reads at a glance. Lights that only
+support on/off get a plain toggle, no slider.
+
+| Option | Default | Description |
+|---|---|---|
+| `entity` | *required* | Any `light.*` entity. |
+| `name` | friendly name | Override the label. |
+| `icon` | auto | Any `mdi:` icon. |
+| `slider` | `true` | `false` makes the whole card a plain toggle. |
+| `use_light_color` | `true` | `false` uses a neutral warm white instead. |
+
+> The slider claims horizontal drags but declares `touch-action: pan-y`, so
+> vertical scrolling past the card still works on a phone. If you use a
+> swipe-between-views plugin, set `slider: false` on cards near the edge.
+
+### Aurora Climate
+
+```yaml
+type: custom:aurora-climate
+entity: climate.living_room
+```
+
+| | |
+|---|---|
+| − / + | one `target_temp_step` |
+| Drag across the temperature row | set the target directly |
+| Mode buttons | `climate.set_hvac_mode` |
+| Hold the icon | more-info dialog |
+
+Service calls are debounced, so dragging from 18 to 24 sends one command rather
+than twelve. The card's tint follows the target within the thermostat's own
+`min_temp`/`max_temp` range.
+
+| Option | Default | Description |
+|---|---|---|
+| `entity` | *required* | Any `climate.*` entity. |
+| `name` | friendly name | Override the label. |
+| `icon` | `mdi:thermostat` | Any `mdi:` icon. |
+| `show_modes` | `true` | Hide the HVAC mode row. |
+| `slider` | `true` | `false` leaves only the − / + buttons. |
+
+---
+
 ### Using the ambient colours yourself
 
 Whether or not Glass is on, these properties are live on `<html>`:
@@ -251,9 +322,12 @@ wallpanels from allocating a canvas nobody can afford to repaint.
 | v0.1 | Sky, sun, moon with phase, stars, shooting stars, clouds, quality tiers, HACS packaging | ✅ |
 | v0.2 | Rain, snow, fog and lightning renderers; stratus/cumulus clouds | ✅ |
 | v0.3 | Season engine, ambient weather lighting, parallax | ✅ |
-| **v0.4** (current) | Aurora Glass – glassmorphism, card glow, adaptive colours | ✅ |
-| v0.5 | Aurora Cards | planned |
+| v0.4 | Aurora Glass – glassmorphism, card glow, adaptive colours | ✅ |
+| **v0.5** (current) | Aurora Cards – Light and Climate | ✅ |
 | v0.6 | Aurora Layout – genuinely different layouts for phone, tablet, desktop and wallpanel | planned |
+
+More cards (media player, sensor overview, covers) follow the same pattern and
+land as they are needed.
 
 ---
 
@@ -261,7 +335,7 @@ wallpanels from allocating a canvas nobody can afford to repaint.
 
 ```bash
 npm install
-npm run build      # -> dist/aurora-background.js
+npm run build      # -> dist/aurora-ui.js
 npm run typecheck
 npm run dev        # rebuild on change
 ```
@@ -272,9 +346,11 @@ Two browser test pages run against the built bundle without Home Assistant:
 npx vite
 ```
 
-- `examples/dev-preview.html` – ten sky states side by side, with an elevation slider
+- `examples/dev-preview.html` – twelve sky states side by side, with an elevation slider
 - `examples/dev-background.html` – the real full-viewport mount, over mock dashboard cards
+- `examples/dev-cards.html` – Light and Climate against a mock Home Assistant whose service calls really mutate state
 - `examples/dev-moon.html?phase=0.25` – one moon phase at a time, clock frozen to its transit
+- `examples/dev-lightning.html` – drives the lightning renderer from source on a fixed clock
 
 `dist/` is committed on purpose: HACS falls back to it when a release has no
 attached asset, and the `Validate` workflow fails if it drifts from `src/`.
@@ -283,4 +359,10 @@ attached asset, and the `Validate` workflow fails if it drifts from `src/`.
 
 ## License
 
-MIT – see [LICENSE](LICENSE).
+**GNU Affero General Public License v3.0 or later** – see [LICENSE](LICENSE).
+
+In short: you may use, study, change and share Aurora UI freely. If you
+distribute a modified version — or run one as part of a network service —
+you have to make your source available under the same license. The built
+`aurora-ui.js` carries a banner pointing back at this repository so anyone who
+receives the bundle can find the source.

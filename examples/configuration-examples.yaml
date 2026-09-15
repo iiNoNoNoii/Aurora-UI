@@ -1,5 +1,6 @@
-# Aurora Background – copy/paste configuration examples.
-# Each block is ONE card. Add it to the view you want the background on.
+# Aurora UI – copy/paste configuration examples.
+# Examples 1-9 configure Aurora Background (add ONE per view).
+# Examples 10+ are the Aurora Cards.
 
 # ---------------------------------------------------------------------------
 # 1. The absolute minimum.
@@ -132,3 +133,34 @@
     opacity: 0.62
     blur: 20
     glow: 0.5
+
+# ---------------------------------------------------------------------------
+# 10. Aurora Light – the minimum.
+# ---------------------------------------------------------------------------
+- type: custom:aurora-light
+  entity: light.living_room
+
+# ---------------------------------------------------------------------------
+# 11. Aurora Light – all options.
+# ---------------------------------------------------------------------------
+- type: custom:aurora-light
+  entity: light.desk
+  name: Desk lamp
+  icon: mdi:desk-lamp
+  slider: true # false = plain toggle, no brightness drag
+  use_light_color: true # false = neutral warm white instead of the bulb colour
+
+# ---------------------------------------------------------------------------
+# 12. Aurora Climate – the minimum.
+# ---------------------------------------------------------------------------
+- type: custom:aurora-climate
+  entity: climate.living_room
+
+# ---------------------------------------------------------------------------
+# 13. Aurora Climate – compact: no mode row, buttons only.
+# ---------------------------------------------------------------------------
+- type: custom:aurora-climate
+  entity: climate.bedroom
+  name: Bedroom
+  show_modes: false
+  slider: false

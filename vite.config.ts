@@ -13,7 +13,11 @@ export default defineConfig({
   esbuild: {
     // Lit 3 uses TC39-stage decorators via TypeScript's legacy decorator emit.
     // esbuild reads experimentalDecorators from tsconfig.json automatically.
-    legalComments: 'none',
+    //
+    // `inline` keeps `/*! … */` comments: AGPL-3.0 requires everyone who
+    // receives the bundle to be able to find the source, so the banner must
+    // survive minification. Do not set this to 'none'.
+    legalComments: 'inline',
   },
   build: {
     target: 'es2020',
@@ -25,14 +29,17 @@ export default defineConfig({
     lib: {
       entry: fileURLToPath(new URL('./src/index.ts', import.meta.url)),
       formats: ['es'],
-      fileName: () => 'aurora-background.js',
+      fileName: () => 'aurora-ui.js',
     },
     rollupOptions: {
       // Nothing is external: Home Assistant loads a single self-contained module.
       external: [],
       output: {
         inlineDynamicImports: true,
-        banner: `/*! Aurora Background v${pkg.version} | MIT License | https://github.com/aurora-ui/aurora-background */`,
+        // AGPL-3.0 requires recipients to be pointed at the source, so the
+        // banner survives minification (esbuild keeps a leading `/*!`).
+        banner:
+          `/*! Aurora UI v${pkg.version} | AGPL-3.0-or-later | Source: https://github.com/iiNoNoNoii/Aurora-UI */`,
       },
     },
   },

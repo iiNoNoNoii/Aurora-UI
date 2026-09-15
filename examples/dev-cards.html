@@ -1,0 +1,336 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Aurora UI – cards bench</title>
+    <style>
+      body {
+        margin: 0;
+        padding: 20px;
+        background: #0a0c12;
+        color: #e6ecf7;
+        font: 14px/1.5 system-ui, -apple-system, 'Segoe UI', sans-serif;
+      }
+      h3 {
+        margin: 0 0 4px;
+        font-size: 17px;
+      }
+      p.lead {
+        margin: 0 0 18px;
+        opacity: 0.6;
+        font-size: 13px;
+      }
+      .grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+        gap: 16px;
+        align-items: start;
+      }
+      .log {
+        margin-top: 20px;
+        padding: 12px 14px;
+        border-radius: 12px;
+        background: rgba(255, 255, 255, 0.05);
+        font-family: ui-monospace, Menlo, Consolas, monospace;
+        font-size: 12px;
+        white-space: pre-wrap;
+        max-height: 180px;
+        overflow: auto;
+      }
+      .controls {
+        display: flex;
+        gap: 14px;
+        align-items: center;
+        margin-bottom: 16px;
+        font-size: 13px;
+      }
+    </style>
+  </head>
+  <body>
+    <h3>Aurora UI — cards bench</h3>
+    <p class="lead">
+      Runs the real cards against a mock Home Assistant. Service calls mutate the mock state
+      and are echoed back, exactly like the real state loop.
+    </p>
+
+    <div class="controls">
+      <label><input type="checkbox" id="glass" /> Aurora Glass</label>
+      <label><input type="checkbox" id="bg" /> Aurora Background behind</label>
+    </div>
+
+    <div class="grid" id="grid"></div>
+    <div class="log" id="log">service calls appear here…</div>
+
+    <script type="module">
+      /*
+       * Minimal stand-ins for the two Home Assistant elements the cards use.
+       * Registered before the bundle so the cards find them, exactly as they
+       * would inside the frontend.
+       */
+      class HaCard extends HTMLElement {
+        constructor() {
+          super();
+          const root = this.attachShadow({ mode: 'open' });
+          root.innerHTML = `
+            <style>
+              :host {
+                display: block;
+                background: var(--ha-card-background, var(--card-background-color, #1c2029));
+                -webkit-backdrop-filter: var(--ha-card-backdrop-filter, none);
+                backdrop-filter: var(--ha-card-backdrop-filter, none);
+                border-style: solid;
+                border-width: var(--ha-card-border-width, 1px);
+                border-color: var(--ha-card-border-color, rgba(255,255,255,0.12));
+                border-radius: var(--ha-card-border-radius, 12px);
+                box-shadow: var(--ha-card-box-shadow, none);
+                color: var(--primary-text-color, #eef3fb);
+              }
+            </style>
+            <slot></slot>`;
+        }
+      }
+      if (!customElements.get('ha-card')) customElements.define('ha-card', HaCard);
+
+      // A tiny glyph map, enough to make the layout legible in a screenshot.
+      const GLYPHS = {
+        'mdi:lightbulb': '💡',
+        'mdi:lightbulb-outline': '○',
+        'mdi:thermostat': '🌡',
+        'mdi:minus': '−',
+        'mdi:plus': '+',
+        'mdi:power': '⏻',
+        'mdi:fire': '🔥',
+        'mdi:snowflake': '❄',
+        'mdi:sun-snowflake-variant': '☀',
+        'mdi:thermostat-auto': 'A',
+        'mdi:water-percent': '💧',
+        'mdi:fan': '✱',
+        'mdi:tune': '≡',
+      };
+      class HaIcon extends HTMLElement {
+        static get observedAttributes() {
+          return ['icon'];
+        }
+        set icon(value) {
+          this._icon = value;
+          this.render();
+        }
+        get icon() {
+          return this._icon;
+        }
+        connectedCallback() {
+          this.render();
+        }
+        attributeChangedCallback() {
+          this.render();
+        }
+        render() {
+          const name = this._icon ?? this.getAttribute('icon') ?? '';
+          this.textContent = GLYPHS[name] ?? '•';
+          this.style.cssText =
+            'display:grid;place-items:center;width:24px;height:24px;font-size:19px;line-height:1';
+        }
+      }
+      if (!customElements.get('ha-icon')) customElements.define('ha-icon', HaIcon);
+
+      await import('../dist/aurora-ui.js');
+
+      /* ---------------- mock Home Assistant ---------------- */
+
+      const logEl = document.getElementById('log');
+      const lines = [];
+      function log(message) {
+        lines.unshift(`${new Date().toLocaleTimeString()}  ${message}`);
+        logEl.textContent = lines.slice(0, 12).join('\n');
+      }
+
+      const states = {
+        'light.living_room': {
+          entity_id: 'light.living_room',
+          state: 'on',
+          attributes: {
+            friendly_name: 'Living room',
+            brightness: 196,
+            rgb_color: [255, 176, 92],
+            supported_color_modes: ['color_temp', 'hs'],
+          },
+        },
+        'light.desk': {
+          entity_id: 'light.desk',
+          state: 'on',
+          attributes: {
+            friendly_name: 'Desk lamp',
+            brightness: 90,
+            color_temp_kelvin: 5600,
+            supported_color_modes: ['color_temp'],
+          },
+        },
+        'light.porch': {
+          entity_id: 'light.porch',
+          state: 'off',
+          attributes: { friendly_name: 'Porch', supported_color_modes: ['onoff'] },
+        },
+        'light.broken': {
+          entity_id: 'light.broken',
+          state: 'unavailable',
+          attributes: { friendly_name: 'Garage (offline)' },
+        },
+        'climate.living_room': {
+          entity_id: 'climate.living_room',
+          state: 'heat',
+          attributes: {
+            friendly_name: 'Living room',
+            current_temperature: 20.1,
+            temperature: 21.5,
+            min_temp: 7,
+            max_temp: 30,
+            target_temp_step: 0.5,
+            temperature_unit: '°C',
+            hvac_action: 'heating',
+            hvac_modes: ['off', 'heat', 'cool', 'heat_cool', 'auto'],
+          },
+        },
+        'climate.bedroom': {
+          entity_id: 'climate.bedroom',
+          state: 'cool',
+          attributes: {
+            friendly_name: 'Bedroom',
+            current_temperature: 24.8,
+            temperature: 18.0,
+            min_temp: 16,
+            max_temp: 30,
+            target_temp_step: 0.5,
+            temperature_unit: '°C',
+            hvac_action: 'cooling',
+            hvac_modes: ['off', 'cool', 'auto'],
+          },
+        },
+        'sun.sun': {
+          entity_id: 'sun.sun',
+          state: 'above_horizon',
+          attributes: { elevation: 5, azimuth: 265, rising: false },
+        },
+        'weather.demo': {
+          entity_id: 'weather.demo',
+          state: 'partlycloudy',
+          attributes: { temperature: 14, wind_speed: 12, wind_speed_unit: 'km/h' },
+        },
+      };
+
+      const cards = [];
+
+      function buildHass() {
+        return {
+          config: { latitude: 51.2, longitude: 6.8, unit_system: { temperature: '°C' } },
+          states,
+          callService(domain, service, data) {
+            log(`${domain}.${service}  ${JSON.stringify(data)}`);
+            applyService(domain, service, data);
+            // Home Assistant replaces the state object on change; mirror that.
+            queueMicrotask(pushHass);
+            return Promise.resolve();
+          },
+        };
+      }
+
+      function applyService(domain, service, data) {
+        const id = data.entity_id;
+        const previous = states[id];
+        if (!previous) return;
+        const next = {
+          ...previous,
+          attributes: { ...previous.attributes },
+        };
+
+        if (domain === 'light') {
+          if (service === 'toggle') next.state = previous.state === 'on' ? 'off' : 'on';
+          if (service === 'turn_on') {
+            next.state = 'on';
+            if (typeof data.brightness_pct === 'number') {
+              next.attributes.brightness = Math.round((data.brightness_pct / 100) * 255);
+            }
+          }
+          if (service === 'turn_off') next.state = 'off';
+        }
+
+        if (domain === 'climate') {
+          if (service === 'set_temperature' && typeof data.temperature === 'number') {
+            next.attributes.temperature = data.temperature;
+          }
+          if (service === 'set_hvac_mode' && typeof data.hvac_mode === 'string') {
+            next.state = data.hvac_mode;
+            next.attributes.hvac_action = data.hvac_mode === 'off' ? 'off' : 'idle';
+          }
+        }
+
+        states[id] = next;
+      }
+
+      function pushHass() {
+        const hass = buildHass();
+        for (const card of cards) card.hass = hass;
+      }
+
+      /* ---------------- build the bench ---------------- */
+
+      const grid = document.getElementById('grid');
+
+      function add(tag, config) {
+        const card = document.createElement(tag);
+        card.setConfig(config);
+        grid.appendChild(card);
+        cards.push(card);
+        return card;
+      }
+
+      add('aurora-light', { type: 'custom:aurora-light', entity: 'light.living_room' });
+      add('aurora-light', { type: 'custom:aurora-light', entity: 'light.desk' });
+      add('aurora-light', { type: 'custom:aurora-light', entity: 'light.porch' });
+      add('aurora-light', { type: 'custom:aurora-light', entity: 'light.broken' });
+      add('aurora-climate', { type: 'custom:aurora-climate', entity: 'climate.living_room' });
+      add('aurora-climate', { type: 'custom:aurora-climate', entity: 'climate.bedroom' });
+
+      pushHass();
+
+      /* ---------------- optional background + glass ---------------- */
+
+      let background = null;
+      function syncBackground() {
+        const wantBackground = document.getElementById('bg').checked;
+        const wantGlass = document.getElementById('glass').checked;
+
+        if (!wantBackground && !wantGlass) {
+          if (background) {
+            background.remove();
+            const index = cards.indexOf(background);
+            if (index >= 0) cards.splice(index, 1);
+            background = null;
+          }
+          return;
+        }
+
+        if (!background) {
+          background = document.createElement('aurora-background');
+          document.body.appendChild(background);
+          cards.push(background);
+        }
+        background.setConfig({
+          type: 'custom:aurora-background',
+          mode: 'background',
+          weather_entity: 'weather.demo',
+          sun_entity: 'sun.sun',
+          quality: 'high',
+          glass: wantGlass,
+          background: { transparent_lovelace: wantBackground },
+        });
+        background.hass = buildHass();
+      }
+
+      document.getElementById('bg').addEventListener('change', syncBackground);
+      document.getElementById('glass').addEventListener('change', syncBackground);
+
+      window.__bench = { states, pushHass, buildHass };
+    </script>
+  </body>
+</html>

@@ -19,11 +19,11 @@ whether reduced motion is active.
 The browser never loaded the resource.
 
 1. **Settings → Dashboards → ⋮ → Resources** – there must be an entry
-   `/hacsfiles/aurora-background/aurora-background.js` of type
+   `/hacsfiles/Aurora-UI/aurora-ui.js` of type
    **JavaScript module**.
 2. Hard-reload: `Ctrl`/`Cmd` + `Shift` + `R`. On the companion app, clear the
    frontend cache in the app settings.
-3. Open the URL directly in the browser (`https://your-ha/hacsfiles/aurora-background/aurora-background.js`).
+3. Open the URL directly in the browser (`https://your-ha/hacsfiles/Aurora-UI/aurora-ui.js`).
    A 404 means HACS did not place the file — reinstall it in HACS.
 
 ---
@@ -228,4 +228,4 @@ Home Assistant caches frontend resources aggressively.
 1. Hard-reload (`Ctrl`/`Cmd` + `Shift` + `R`).
 2. Companion app: **Settings → Companion App → Debugging → Reset frontend cache**.
 3. Still stale? Append a version query to the resource URL:
-   `/hacsfiles/aurora-background/aurora-background.js?v=0.4.0`
+   `/hacsfiles/Aurora-UI/aurora-ui.js?v=0.4.0`

@@ -1,6 +1,6 @@
 {
-  "name": "Aurora Background",
-  "filename": "aurora-background.js",
+  "name": "Aurora UI",
+  "filename": "aurora-ui.js",
   "render_readme": true,
   "homeassistant": "2024.2.0",
   "hacs": "1.34.0"

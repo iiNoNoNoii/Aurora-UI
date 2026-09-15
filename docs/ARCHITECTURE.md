@@ -36,10 +36,43 @@ src/
 │   ├── weather-mapping.ts           HA condition -> WeatherProfile
 │   └── weather-engine.ts            read `hass`, blend between profiles
 │
+├── cards/
+│   ├── aurora-light-card.ts
+│   ├── aurora-climate-card.ts
+│   └── aurora-card-editors.ts
+│
+├── shared/
+│   ├── ha-helpers.ts                entity reads, service calls, kelvin -> RGB
+│   ├── drag-control.ts              pointer handling for the slider surfaces
+│   └── card-styles.ts               the shared Aurora Card look
+│
 ├── editor/aurora-background-editor.ts
 ├── ui/debug-overlay.ts
 └── styles/styles.ts
 ```
+
+Everything ships as one `aurora-ui.js`, so a dashboard needs a single HACS
+repository and a single resource.
+
+## Aurora Cards
+
+The cards deliberately share almost nothing with the background beyond
+`--aurora-*`: they read the sky if it is there and fall back to the user's
+theme if it is not, so either half of the suite is usable alone.
+
+Three rules they all follow:
+
+- **Optimistic, then corrected.** A drag updates the card immediately and
+  starts a timer; Home Assistant's echo takes over when it arrives, and the
+  optimistic value is dropped after a couple of seconds either way. Without
+  this a slider visibly snaps back on a slow connection.
+- **Debounced service calls.** Dragging a thermostat from 18 to 24 sends one
+  `climate.set_temperature`, not twelve. A released drag sends immediately; an
+  in-flight one waits.
+- **`touch-action` claims one axis only.** A horizontal slider declares
+  `pan-y`, so the browser keeps vertical scrolling and the card never traps a
+  flick past it. Pointer capture is taken only once a press has moved far
+  enough to be a drag, never on a tap.
 
 ## Data flow
 

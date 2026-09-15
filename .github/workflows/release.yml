@@ -40,4 +40,4 @@ jobs:
       - name: Attach bundle to the release
         uses: softprops/action-gh-release@v2
         with:
-          files: dist/aurora-background.js
+          files: dist/aurora-ui.js

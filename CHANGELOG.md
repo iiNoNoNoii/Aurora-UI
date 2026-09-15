@@ -4,6 +4,39 @@ All notable changes to Aurora Background are documented here.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and the project uses [Semantic Versioning](https://semver.org/).
 
+## [0.5.0-alpha] – 2026-09-15
+
+Aurora Cards, and the project becomes a suite.
+
+### Added
+
+- **Aurora Light** (`custom:aurora-light`) – a light tile that takes the bulb's
+  own colour, from `rgb_color` or from `color_temp_kelvin` converted to RGB.
+  Drag across the card for brightness, tap to toggle, hold for more-info.
+  Brightness is optimistic while Home Assistant catches up, and lights that
+  only support on/off get a plain toggle instead of a slider.
+- **Aurora Climate** (`custom:aurora-climate`) – a thermostat with a large
+  target temperature, − / + buttons, a drag row, and HVAC mode buttons. The
+  surface shifts from blue to amber across the thermostat's own
+  `min_temp`/`max_temp` range. Service calls are debounced, so a drag from 18
+  to 24 sends one command rather than twelve.
+- Visual editors for both cards, and entries in the Lovelace card picker.
+- `DragControl`, a shared pointer helper. A horizontal slider declares
+  `touch-action: pan-y`, so the browser keeps vertical scrolling and a user can
+  flick past a card without fighting it; pointer capture is only taken once a
+  press is definitely a drag.
+- `examples/dev-cards.html` – a bench where service calls really mutate the
+  mock state and are echoed back, like the real state loop.
+
+### Changed
+
+- **The project is now Aurora UI**, published from one repository as a single
+  `aurora-ui.js`, the way Mushroom ships its cards. The background card type is
+  unchanged (`custom:aurora-background`), so existing configuration keeps working.
+- **License is AGPL-3.0-or-later**, matching the choice made for the
+  repository. The bundle banner points recipients at the source, as the license
+  requires.
+
 ## [0.4.0-alpha] – 2026-09-15
 
 Aurora Glass: the sky now styles the cards in front of it.
@@ -121,12 +154,15 @@ First working release. Everything in this list is implemented and rendering.
 
 ## Still open
 
-- **Aurora Cards** (v0.5) and **Aurora Layout** (v0.6) are separate modules and
-  are not started yet.
+- **Aurora Layout** (v0.6) is not started yet.
+- More cards — media player, sensor overview, covers — follow the same pattern.
 - Aurora Glass depends on `--ha-card-backdrop-filter`. On a Home Assistant
   version that does not read it, cards stay translucent but unblurred.
+- Nothing has been exercised inside a real Home Assistant yet; every check so
+  far ran against a faithful mock.
 
-[0.4.0-alpha]: https://github.com/iinononoii/aurora-background/releases/tag/v0.4.0-alpha
-[0.3.0-alpha]: https://github.com/iinononoii/aurora-background/releases/tag/v0.3.0-alpha
-[0.2.0-alpha]: https://github.com/iinononoii/aurora-background/releases/tag/v0.2.0-alpha
-[0.1.0-alpha]: https://github.com/iinononoii/aurora-background/releases/tag/v0.1.0-alpha
+[0.5.0-alpha]: https://github.com/iiNoNoNoii/Aurora-UI/releases/tag/v0.5.0-alpha
+[0.4.0-alpha]: https://github.com/iiNoNoNoii/Aurora-UI/releases/tag/v0.4.0-alpha
+[0.3.0-alpha]: https://github.com/iiNoNoNoii/Aurora-UI/releases/tag/v0.3.0-alpha
+[0.2.0-alpha]: https://github.com/iiNoNoNoii/Aurora-UI/releases/tag/v0.2.0-alpha
+[0.1.0-alpha]: https://github.com/iiNoNoNoii/Aurora-UI/releases/tag/v0.1.0-alpha
