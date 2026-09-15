@@ -146,8 +146,10 @@ export function snapshotToProfile(snapshot: EnvironmentSnapshot): WeatherProfile
   const profile = conditionToProfile(snapshot.condition);
 
   if (snapshot.cloudCoverage !== null) {
-    // Trust the integration, but keep the condition's character.
-    profile.cloudCover = lerp(profile.cloudCover, snapshot.cloudCoverage, 0.65);
+    // When the integration reports an actual percentage, that is the sky the
+    // user is looking at – let it dominate and keep only a trace of the
+    // condition's own character.
+    profile.cloudCover = lerp(profile.cloudCover, snapshot.cloudCoverage, 0.85);
     profile.sunVisibility = Math.min(profile.sunVisibility, 1 - snapshot.cloudCoverage * 0.85);
   }
   if (snapshot.wind !== null) {

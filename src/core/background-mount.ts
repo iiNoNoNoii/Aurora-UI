@@ -133,6 +133,12 @@ class BackgroundMount {
         '-webkit-user-select:none',
         'touch-action:none',
         'contain:layout paint style',
+        // Force a stable compositor layer. A `position: fixed` element behind
+        // scrolling content gets promoted and demoted repeatedly on Android
+        // Chrome, and each change can present a partially painted frame.
+        'transform:translateZ(0)',
+        'backface-visibility:hidden',
+        '-webkit-backface-visibility:hidden',
         `z-index:${config.background.z_index}`,
       ].join(';')
     );

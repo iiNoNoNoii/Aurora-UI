@@ -343,33 +343,66 @@ function createCloudSprite(
   // Lobes sit at regular intervals with jitter. Purely random placement leaves
   // gaps, and a gap in a cloud silhouette reads as a row of separate dots –
   // which is exactly how the old thin stratus sprites looked.
-  const lobes = cumulus ? 10 : 16;
-  const spacing = usable / (lobes - 1);
-  let maxLift = 0;
+  const lobes = cumulus ? 9 : 14;
 
-  for (let i = 0; i < lobes; i++) {
-    const t = i / (lobes - 1);
-    const cx = margin + t * usable + (rng() - 0.5) * spacing * 0.6;
+  // Lobe width follows the spacing, not the lobe height. Deriving it from the
+  // height let a single lobe grow half a sprite wide, which both overflowed the
+  // canvas and flattened the outline into one smooth dome.
+  const lobeRadiusX = usable / (lobes * 0.85);
+  // Inset the centres so even the widest lobe stays inside the blur margin.
+  const centreSpan = Math.max(usable * 0.2, usable - lobeRadiusX * 2.6);
+  const centreStart = margin + (usable - centreSpan) / 2;
+  const spacing = centreSpan / Math.max(1, lobes - 1);
+  const slabHeight = (baseY - ceiling) * (cumulus ? 0.3 : 0.4);
 
-    // Tallest in the middle, tapering to the sides.
-    const taper = Math.pow(Math.sin(Math.PI * clamp01(t)), cumulus ? 0.5 : 0.35);
-    const headroom = (baseY - ceiling) * (cumulus ? 1 : 0.78);
-    const lift = headroom * taper * randomBetween(rng, 0.62, 1);
-    maxLift = Math.max(maxLift, lift);
-
-    const ry = Math.max(2, lift * randomBetween(rng, 0.46, 0.66));
-    const rx = ry * randomBetween(rng, cumulus ? 1.1 : 1.9, cumulus ? 1.75 : 3);
-    const cy = baseY - lift + ry;
-
+  const drawLobe = (cx: number, cy: number, rx: number, ry: number): void => {
     sctx.beginPath();
     sctx.ellipse(cx, cy, rx, ry, 0, 0, TAU);
     sctx.fill();
+  };
+
+  for (let i = 0; i < lobes; i++) {
+    const t = i / (lobes - 1);
+    const cx = centreStart + t * centreSpan + (rng() - 0.5) * spacing * 0.5;
+
+    // Tallest in the middle, tapering to the sides – but never to nothing.
+    // A taper that reaches zero leaves the outermost lobes as dots, so the
+    // silhouette ends on the thin tip of the base and reads as a sharp wedge.
+    // Real cumulus end on a rounded lobe.
+    const taper =
+      0.34 + 0.66 * Math.pow(Math.sin(Math.PI * clamp01(t)), cumulus ? 0.55 : 0.4);
+    const headroom = (baseY - ceiling) * (cumulus ? 1 : 0.74);
+    const lift = headroom * taper * randomBetween(rng, 0.6, 1);
+
+    const rx = lobeRadiusX * randomBetween(rng, 0.85, 1.25);
+    // Keep lobes roughly round; a tall thin lobe reads as a spike.
+    const ry = Math.min(rx * randomBetween(rng, 1, 1.45), Math.max(3, lift * 0.7));
+    drawLobe(cx, baseY - lift + ry, rx, ry);
+
+    // Each lobe carries its own piece of the base, so the underside follows
+    // the cloud's horizontal profile. A few wide ellipses spanning the whole
+    // sprite instead produced a plateau that overflowed the canvas and got
+    // clipped at both edges.
+    drawLobe(
+      cx,
+      baseY - slabHeight * randomBetween(rng, 0.1, 0.4),
+      rx * randomBetween(rng, 0.95, 1.2),
+      slabHeight * taper * randomBetween(rng, 0.8, 1.2)
+    );
   }
 
-  // A slab across the bottom turns the row of scalloped lobe undersides into
-  // the flat base a real cloud has.
-  const slabTop = baseY - maxLift * (cumulus ? 0.34 : 0.42);
-  sctx.fillRect(margin + usable * 0.04, slabTop, usable * 0.92, baseY - slabTop);
+  // A second, smaller pass breaks the smooth outline of the first. Without it
+  // the cloud is one clean dome, which is the other half of looking "cut out".
+  const detailCount = cumulus ? 7 : 9;
+  for (let i = 0; i < detailCount; i++) {
+    const t = (i + randomBetween(rng, 0.2, 0.8)) / detailCount;
+    const cx = centreStart + clamp01(t) * centreSpan;
+    const taper = 0.4 + 0.6 * Math.sin(Math.PI * clamp01(t));
+    const r = lobeRadiusX * randomBetween(rng, 0.32, 0.6);
+    const cy = baseY - (baseY - ceiling) * taper * randomBetween(rng, 0.35, 0.85) + r * 0.4;
+    drawLobe(cx, cy, r * randomBetween(rng, 1, 1.35), r);
+  }
+
 
   const soft = blurCanvas(solid, blur);
   const ctx = soft.getContext('2d');
@@ -390,7 +423,7 @@ function createCloudSprite(
   const highlights = cumulus ? 3 : 2;
   for (let i = 0; i < highlights; i++) {
     const hx = margin + usable * randomBetween(rng, 0.22, 0.78);
-    const hy = baseY - maxLift * randomBetween(rng, 0.55, 0.95);
+    const hy = baseY - (baseY - ceiling) * randomBetween(rng, 0.45, 0.85);
     const hr = height * randomBetween(rng, 0.18, 0.32);
     const glow = ctx.createRadialGradient(hx, hy, 0, hx, hy, hr);
     glow.addColorStop(0, 'rgba(255,255,255,0.55)');

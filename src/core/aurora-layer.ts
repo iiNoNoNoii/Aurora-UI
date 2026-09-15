@@ -78,7 +78,12 @@ export class AuroraLayer {
     );
     this.host.appendChild(this.canvas);
 
-    this.ctx = this.canvas.getContext('2d', { alpha: false, desynchronized: true });
+    // `desynchronized: true` is a low-latency hint meant for stylus input. On
+    // some Android GPUs it puts the canvas on a presentation path that tears
+    // and flickers, which is exactly the symptom reported on Chrome/Android
+    // while desktop and devtools device emulation stayed clean. We draw a
+    // background, not a drawing surface – the hint buys us nothing here.
+    this.ctx = this.canvas.getContext('2d', { alpha: false });
 
     const level = this.resolveQuality();
     this.performance = new PerformanceManager(
@@ -332,8 +337,11 @@ export class AuroraLayer {
     requestAnimationFrame(() => {
       this.resizePending = false;
       if (this.destroyed) return;
-      this.measure();
-      if (!this.engine.isRunning) this.renderOnce();
+      const resized = this.measure();
+      // Repaint in this same frame whenever the canvas was reallocated, even
+      // while the loop is running: waiting for the next frame is what lets the
+      // cleared canvas reach the screen.
+      if (resized || !this.engine.isRunning) this.renderOnce();
     });
   };
 
@@ -358,7 +366,8 @@ export class AuroraLayer {
     }
   }
 
-  private measure(): void {
+  /** Returns true when the backing store was reallocated. */
+  private measure(): boolean {
     const rect = this.host.getBoundingClientRect();
     const width = Math.max(1, Math.round(rect.width));
     const height = Math.max(1, Math.round(rect.height));
@@ -387,12 +396,18 @@ export class AuroraLayer {
     this.pixelRatio = ratio;
 
     if (changed) {
+      // Assigning width/height clears the canvas. With `alpha: false` a cleared
+      // canvas is black, so if the compositor gets to present between here and
+      // the next animation frame the user sees a black flash. On Android the
+      // URL bar hides and shows while scrolling, which resizes this layer over
+      // and over – one flash per resize reads as flickering.
       this.canvas.width = backingWidth;
       this.canvas.height = backingHeight;
       this.scene.resize(width, height, ratio);
     }
 
     this.updateRunState();
+    return changed;
   }
 
   private readonly frame = (dt: number, time: number): void => {

@@ -208,6 +208,31 @@ can control, or open `examples/dev-preview.html` from a checkout.
 
 The debug overlay's `parallax` line shows the live offset in pixels.
 
+## The background flickers on an Android phone
+
+Three known causes were fixed in 0.5.2 — update first. If it still happens,
+the symptom is worth reporting with the details below, because it did not
+reproduce on desktop or in desktop devtools device emulation.
+
+Things that help narrow it down:
+
+1. Does it also happen with `effects: {clouds: false}`? That separates the
+   drawing from the compositing.
+2. Does it stop when you scroll the dashboard to the very top and leave it
+   there? Scrolling on Android hides and shows the URL bar, which resizes the
+   background layer.
+3. Set `debug: true` and note the FPS and quality lines while it flickers. A
+   quality change mid-flight rebuilds every renderer.
+4. Try `performance: {auto_quality: false, max_fps: 30}` with `quality: low`.
+
+As a last resort, a fixed `z-index: 0` sometimes behaves better than `-1` on
+older Android WebView builds:
+
+```yaml
+background:
+  z_index: 0
+```
+
 ## Animations are frozen
 
 Expected in three cases:

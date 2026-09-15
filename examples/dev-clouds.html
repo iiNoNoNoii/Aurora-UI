@@ -21,7 +21,7 @@
       }
       .sheet {
         display: grid;
-        grid-template-columns: repeat(4, 1fr);
+        grid-template-columns: repeat(var(--cols, 4), 1fr);
         gap: 14px;
         margin-bottom: 22px;
       }
@@ -67,6 +67,9 @@
       renderer.setup(scene);
 
       const sheet = document.getElementById('sheet');
+      // `?cols=2` blows the sprites up when an edge needs a close look.
+      const cols = new URLSearchParams(location.search).get('cols');
+      if (cols) sheet.style.setProperty('--cols', cols);
 
       renderer.base.forEach((sprite, index) => {
         for (const mode of ['swatch', 'dark']) {

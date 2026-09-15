@@ -4,6 +4,47 @@ All notable changes to Aurora Background are documented here.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and the project uses [Semantic Versioning](https://semver.org/).
 
+## [0.5.2-alpha] – 2026-09-15
+
+### Fixed
+
+Three candidate causes for the flickering reported on Chrome for Android — it
+did not appear on desktop, nor in desktop devtools device emulation, which
+points at real GPU and compositing behaviour rather than at the drawing code:
+
+- **Dropped the `desynchronized: true` canvas hint.** It is a low-latency hint
+  meant for stylus input; on some Android GPUs it puts the canvas on a
+  presentation path that tears. A background gains nothing from it.
+- **Repaint in the same frame as a resize.** Assigning `canvas.width` clears
+  the canvas, and with `alpha: false` a cleared canvas is black. Waiting for
+  the next animation frame lets that black frame reach the screen. On Android
+  the URL bar hides and shows while scrolling, resizing the layer again and
+  again — one black flash per resize.
+- **Forced a stable compositor layer** on the background element
+  (`translateZ(0)` plus `backface-visibility: hidden`). A `position: fixed`
+  element behind scrolling content gets promoted and demoted repeatedly on
+  Android Chrome, and each change can present a partially painted frame.
+
+Cloud shape, from the "angular and cut off at the sides" report:
+
+- **The base no longer overflows the sprite.** It was drawn as a few wide
+  ellipses spanning the whole sprite, which ran past the canvas on both sides
+  and got clipped — a literal straight cut. Each lobe now carries its own piece
+  of the base, so the underside follows the cloud's own profile.
+- **Lobe width follows the lobe spacing, not the lobe height.** A single lobe
+  could otherwise grow half a sprite wide, which flattened the outline into one
+  smooth dome and pushed it over the edge.
+- **A second pass of smaller lobes** breaks that dome, so the silhouette is
+  irregular the way a real cloud is.
+- The taper no longer reaches zero at the ends: a cloud now finishes on a
+  rounded lobe instead of the thin tip of the base.
+
+### Changed
+
+- When a weather integration reports an actual `cloud_coverage` percentage, it
+  now dominates the condition's own value (0.85 rather than 0.65) — the number
+  of clouds tracks the real sky more closely.
+
 ## [0.5.1-alpha] – 2026-09-15
 
 Clouds rewritten, after a user screen recording showed what they actually
@@ -199,6 +240,7 @@ First working release. Everything in this list is implemented and rendering.
 - Nothing has been exercised inside a real Home Assistant yet; every check so
   far ran against a faithful mock.
 
+[0.5.2-alpha]: https://github.com/iiNoNoNoii/Aurora-UI/releases/tag/v0.5.2-alpha
 [0.5.1-alpha]: https://github.com/iiNoNoNoii/Aurora-UI/releases/tag/v0.5.1-alpha
 [0.5.0-alpha]: https://github.com/iiNoNoNoii/Aurora-UI/releases/tag/v0.5.0-alpha
 [0.4.0-alpha]: https://github.com/iiNoNoNoii/Aurora-UI/releases/tag/v0.4.0-alpha
