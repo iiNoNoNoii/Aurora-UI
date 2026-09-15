@@ -1,0 +1,7 @@
+# Keep line endings stable across contributors and CI. The Validate workflow
+# compares a freshly built dist/ against the committed one, so a CRLF checkout
+# on Windows must not show up as a diff on Linux.
+* text=auto eol=lf
+*.png binary
+*.jpg binary
+*.ico binary

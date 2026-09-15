@@ -1,0 +1,96 @@
+# Aurora Background – copy/paste configuration examples.
+# Each block is ONE card. Add it to the view you want the background on.
+
+# ---------------------------------------------------------------------------
+# 1. The absolute minimum.
+#    Aurora picks the first weather.* entity it finds and uses sun.sun.
+# ---------------------------------------------------------------------------
+- type: custom:aurora-background
+
+# ---------------------------------------------------------------------------
+# 2. Recommended starting point.
+# ---------------------------------------------------------------------------
+- type: custom:aurora-background
+  weather_entity: weather.home
+  quality: auto
+
+# ---------------------------------------------------------------------------
+# 3. Debugging – shows FPS, quality, sun elevation, weather state, particles.
+# ---------------------------------------------------------------------------
+- type: custom:aurora-background
+  weather_entity: weather.home
+  quality: high
+  debug: true
+
+# ---------------------------------------------------------------------------
+# 4. Everything spelled out. All values below are the defaults.
+# ---------------------------------------------------------------------------
+- type: custom:aurora-background
+  mode: background # background | card
+  weather_entity: weather.home
+  sun_entity: sun.sun
+  quality: auto # auto | low | medium | high | ultra
+  debug: false
+
+  effects:
+    sun: true
+    moon: true
+    stars: true
+    shooting_stars: true
+    clouds: true
+    # Accepted today, rendered from v0.2 on:
+    rain: true
+    snow: true
+    fog: true
+    lightning: true
+
+  appearance:
+    intensity: 1.0 # 0..2 – particle and cloud density
+    saturation: 1.0 # 0..2
+    brightness: 1.0 # 0.2..2
+    blur: 0 # px – soften the whole layer
+    ambient_glow: 1.0 # 0..2 – sun/moon halos
+    opacity: 1.0 # 0..1 – fade the layer against the theme
+
+  performance:
+    max_fps: 60 # 10..120
+    auto_quality: true # scale back if frames get expensive
+    pause_when_hidden: true # stop rendering when the tab is in the background
+
+  background:
+    transparent_lovelace: true # make the dashboard surface see-through
+    transparent_header: true # also clear the toolbar background
+    z_index: -1 # keep the layer behind every card
+    css_variables: {} # escape hatch, see below
+
+# ---------------------------------------------------------------------------
+# 5. A theme that paints its own background over Aurora?
+#    Force the offending variables to transparent here.
+# ---------------------------------------------------------------------------
+- type: custom:aurora-background
+  weather_entity: weather.home
+  background:
+    css_variables:
+      primary-background-color: transparent
+      card-background-color: rgba(30, 34, 46, 0.55)
+
+# ---------------------------------------------------------------------------
+# 6. Battery/wallpanel friendly.
+# ---------------------------------------------------------------------------
+- type: custom:aurora-background
+  weather_entity: weather.home
+  quality: low
+  effects:
+    shooting_stars: false
+  performance:
+    max_fps: 24
+    auto_quality: false
+
+# ---------------------------------------------------------------------------
+# 7. Normal card instead of a dashboard background.
+# ---------------------------------------------------------------------------
+- type: custom:aurora-background
+  mode: card
+  height: 260px
+  weather_entity: weather.home
+  quality: high

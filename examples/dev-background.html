@@ -1,0 +1,127 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Aurora Background – dashboard mount test</title>
+    <style>
+      /* Mimics how Home Assistant paints the dashboard surface. */
+      html,
+      body {
+        margin: 0;
+        background: var(--primary-background-color, #111418);
+        min-height: 100%;
+      }
+      home-assistant {
+        display: block;
+        min-height: 300vh;
+        background: var(--lovelace-background, var(--primary-background-color, #111418));
+      }
+      .header {
+        position: sticky;
+        top: 0;
+        height: 56px;
+        display: flex;
+        align-items: center;
+        padding: 0 16px;
+        color: #fff;
+        font: 600 16px system-ui, sans-serif;
+        background: var(--app-header-background-color, #1f2430);
+      }
+      .view {
+        padding: 16px;
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+        gap: 16px;
+      }
+      .ha-card {
+        background: rgba(28, 32, 42, 0.55);
+        backdrop-filter: blur(14px);
+        -webkit-backdrop-filter: blur(14px);
+        border: 1px solid rgba(255, 255, 255, 0.12);
+        border-radius: 16px;
+        padding: 16px;
+        color: #eef3fb;
+        font: 14px/1.5 system-ui, sans-serif;
+        box-shadow: 0 8px 30px rgba(0, 0, 0, 0.25);
+      }
+      button {
+        margin-top: 10px;
+        padding: 8px 12px;
+        border-radius: 10px;
+        border: 1px solid rgba(255, 255, 255, 0.18);
+        background: rgba(255, 255, 255, 0.08);
+        color: inherit;
+        cursor: pointer;
+        font: inherit;
+      }
+      #clicks {
+        font-variant-numeric: tabular-nums;
+      }
+    </style>
+  </head>
+  <body>
+    <home-assistant>
+      <div class="header">Aurora demo dashboard</div>
+      <div class="view" id="view"></div>
+    </home-assistant>
+
+    <script type="module">
+      import '../dist/aurora-background.js';
+
+      const view = document.getElementById('view');
+
+      // The background card, exactly as Lovelace would create it.
+      const card = document.createElement('aurora-background');
+      card.setConfig({
+        type: 'custom:aurora-background',
+        mode: 'background',
+        weather_entity: 'weather.demo',
+        sun_entity: 'sun.sun',
+        quality: 'high',
+        debug: true,
+      });
+      view.appendChild(card);
+
+      const elevation = Number(new URLSearchParams(location.search).get('elevation') ?? 6);
+      const condition = new URLSearchParams(location.search).get('condition') ?? 'partlycloudy';
+
+      card.hass = {
+        config: { latitude: 51.2, longitude: 6.8, time_zone: 'Europe/Berlin', unit_system: {} },
+        states: {
+          'sun.sun': {
+            entity_id: 'sun.sun',
+            state: elevation > 0 ? 'above_horizon' : 'below_horizon',
+            attributes: { elevation, azimuth: 110, rising: true },
+          },
+          'weather.demo': {
+            entity_id: 'weather.demo',
+            state: condition,
+            attributes: { temperature: 14, wind_speed: 18, wind_speed_unit: 'km/h' },
+          },
+        },
+      };
+
+      // Regular cards on top, to check stacking and hit-testing.
+      let clicks = 0;
+      for (let i = 1; i <= 9; i++) {
+        const el = document.createElement('div');
+        el.className = 'ha-card';
+        el.innerHTML = `<b>Card ${i}</b><div>Glass surface over the Aurora layer.</div>`;
+        const button = document.createElement('button');
+        button.textContent = 'Click me';
+        button.addEventListener('click', () => {
+          clicks++;
+          document.getElementById('clicks').textContent = String(clicks);
+        });
+        el.appendChild(button);
+        view.appendChild(el);
+      }
+
+      const counter = document.createElement('div');
+      counter.className = 'ha-card';
+      counter.innerHTML = 'Clicks received: <span id="clicks">0</span>';
+      view.appendChild(counter);
+    </script>
+  </body>
+</html>

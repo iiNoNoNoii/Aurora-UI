@@ -1,0 +1,13 @@
+node_modules/
+.DS_Store
+Thumbs.db
+*.log
+npm-debug.log*
+.vite/
+.idea/
+.vscode/
+*.tsbuildinfo
+
+# NOTE: dist/ is intentionally committed.
+# HACS installs a frontend plugin either from a GitHub release asset or, if the
+# release has no assets, from the `dist/` folder of the tagged commit.

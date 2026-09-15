@@ -1,0 +1,181 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Aurora Background – dev preview</title>
+    <style>
+      :root {
+        color-scheme: dark;
+      }
+      body {
+        margin: 0;
+        padding: 20px;
+        background: #0a0c12;
+        color: #e6ecf7;
+        font: 14px/1.5 system-ui, -apple-system, "Segoe UI", sans-serif;
+      }
+      h1 {
+        font-size: 18px;
+        margin: 0 0 4px;
+        letter-spacing: 0.02em;
+      }
+      p.lead {
+        margin: 0 0 20px;
+        opacity: 0.6;
+        font-size: 13px;
+      }
+      .grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+        gap: 18px;
+      }
+      figure {
+        margin: 0;
+      }
+      figcaption {
+        margin-top: 8px;
+        font-size: 12px;
+        opacity: 0.7;
+        font-family: ui-monospace, Menlo, Consolas, monospace;
+      }
+      aurora-background {
+        display: block;
+      }
+      .controls {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 16px;
+        align-items: center;
+        margin-bottom: 20px;
+        padding: 12px 14px;
+        border-radius: 12px;
+        background: rgba(255, 255, 255, 0.05);
+      }
+      label {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 12px;
+      }
+      input[type='range'] {
+        width: 180px;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>Aurora Background — dev preview</h1>
+    <p class="lead">
+      Renders the card against a mocked Home Assistant state. Open the browser devtools
+      performance panel to profile a tile.
+    </p>
+
+    <div class="controls">
+      <label>
+        Elevation override
+        <input id="elevation" type="range" min="-30" max="70" step="1" value="99" />
+        <span id="elevation-value">auto</span>
+      </label>
+      <label>
+        <input id="debug" type="checkbox" />
+        Debug overlay
+      </label>
+      <label>
+        Quality
+        <select id="quality">
+          <option value="auto">auto</option>
+          <option value="low">low</option>
+          <option value="medium">medium</option>
+          <option value="high" selected>high</option>
+          <option value="ultra">ultra</option>
+        </select>
+      </label>
+    </div>
+
+    <div class="grid" id="grid"></div>
+
+    <script type="module">
+      import '../dist/aurora-background.js';
+
+      const SCENES = [
+        { label: 'night · clear-night', elevation: -35, azimuth: 20, rising: false, condition: 'clear-night' },
+        { label: 'astronomical dawn', elevation: -12, azimuth: 70, rising: true, condition: 'clear-night' },
+        { label: 'sunrise · civil twilight', elevation: -3, azimuth: 85, rising: true, condition: 'partlycloudy' },
+        { label: 'golden hour (rising)', elevation: 4, azimuth: 95, rising: true, condition: 'sunny' },
+        { label: 'midday · sunny', elevation: 52, azimuth: 180, rising: false, condition: 'sunny' },
+        { label: 'midday · cloudy', elevation: 48, azimuth: 175, rising: false, condition: 'cloudy' },
+        { label: 'afternoon · pouring', elevation: 22, azimuth: 230, rising: false, condition: 'pouring' },
+        { label: 'sunset (setting)', elevation: 2, azimuth: 268, rising: false, condition: 'sunny' },
+        { label: 'dusk · fog', elevation: -5, azimuth: 280, rising: false, condition: 'fog' },
+        { label: 'night · snowy', elevation: -20, azimuth: 330, rising: false, condition: 'snowy' },
+      ];
+
+      const grid = document.getElementById('grid');
+      const cards = [];
+
+      function makeHass(scene, elevationOverride) {
+        const elevation = elevationOverride ?? scene.elevation;
+        return {
+          config: { latitude: 51.2, longitude: 6.8, time_zone: 'Europe/Berlin', unit_system: {} },
+          states: {
+            'sun.sun': {
+              entity_id: 'sun.sun',
+              state: elevation > 0 ? 'above_horizon' : 'below_horizon',
+              attributes: { elevation, azimuth: scene.azimuth, rising: scene.rising },
+            },
+            'weather.preview': {
+              entity_id: 'weather.preview',
+              state: scene.condition,
+              attributes: { temperature: 12, wind_speed: 14, wind_speed_unit: 'km/h', humidity: 70 },
+            },
+          },
+        };
+      }
+
+      function config(quality, debug) {
+        return {
+          type: 'custom:aurora-background',
+          mode: 'card',
+          height: '220px',
+          weather_entity: 'weather.preview',
+          sun_entity: 'sun.sun',
+          quality,
+          debug,
+        };
+      }
+
+      for (const scene of SCENES) {
+        const figure = document.createElement('figure');
+        const card = document.createElement('aurora-background');
+        card.setConfig(config('high', false));
+        card.hass = makeHass(scene);
+        const caption = document.createElement('figcaption');
+        caption.textContent = `${scene.label}  ·  elev ${scene.elevation}°  az ${scene.azimuth}°`;
+        figure.append(card, caption);
+        grid.appendChild(figure);
+        cards.push({ card, scene, caption });
+      }
+
+      const elevationInput = document.getElementById('elevation');
+      const elevationValue = document.getElementById('elevation-value');
+      const debugInput = document.getElementById('debug');
+      const qualityInput = document.getElementById('quality');
+
+      function refresh() {
+        const raw = Number(elevationInput.value);
+        const override = raw === 99 ? null : raw;
+        elevationValue.textContent = override === null ? 'auto' : `${override}°`;
+        for (const { card, scene, caption } of cards) {
+          card.setConfig(config(qualityInput.value, debugInput.checked));
+          card.hass = makeHass(scene, override);
+          const elevation = override ?? scene.elevation;
+          caption.textContent = `${scene.label}  ·  elev ${elevation}°  az ${scene.azimuth}°`;
+        }
+      }
+
+      elevationInput.addEventListener('input', refresh);
+      debugInput.addEventListener('change', refresh);
+      qualityInput.addEventListener('change', refresh);
+    </script>
+  </body>
+</html>

@@ -1,0 +1,31 @@
+{
+  "name": "aurora-background",
+  "version": "0.1.0-alpha",
+  "description": "Aurora UI – Aurora Background: procedural, weather- and sun-aware animated background for Home Assistant Lovelace dashboards.",
+  "type": "module",
+  "license": "MIT",
+  "author": "Aurora UI",
+  "keywords": [
+    "home-assistant",
+    "lovelace",
+    "custom-card",
+    "hacs",
+    "weather",
+    "background",
+    "canvas",
+    "aurora-ui"
+  ],
+  "scripts": {
+    "dev": "vite build --watch",
+    "build": "vite build",
+    "typecheck": "tsc --noEmit",
+    "check": "npm run typecheck && npm run build"
+  },
+  "dependencies": {
+    "lit": "^3.1.4"
+  },
+  "devDependencies": {
+    "typescript": "^5.4.5",
+    "vite": "^4.5.3"
+  }
+}
