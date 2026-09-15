@@ -125,13 +125,33 @@ entity actually reports rain. Set one to `false` to rule the effect out entirely
 | Option | Default | Description |
 |---|---|---|
 | `transparent_lovelace` | `true` | Makes the dashboard surface see-through so the layer is visible. |
-| `transparent_header` | `true` | Also clears the toolbar background. |
+| `header` | `auto` | `auto` \| `glass` \| `transparent` \| `keep`. See below. |
 | `z_index` | `-1` | Stacking position of the layer. |
 | `ambient_variables` | `true` | Publish the live sky as `--aurora-*` CSS properties. |
 | `css_variables` | `{}` | Force extra CSS custom properties to transparent. See [troubleshooting](docs/TROUBLESHOOTING.md). |
 
 A visual editor is included – Aurora appears in the card picker as
 **Aurora Background**.
+
+### The toolbar
+
+Home Assistant's toolbar is opaque by default, and on a dark sky that leaves a
+bright slab across the top of an otherwise finished dashboard.
+
+| `header:` | What happens |
+|---|---|
+| `auto` *(default)* | `glass` when Aurora Glass is on, `transparent` when it is not. |
+| `glass` | Translucent, sky-tinted toolbar with a matching text colour. Usually what you want. |
+| `transparent` | Clears it completely. Note that your theme's toolbar text colour then sits directly on the sky. |
+| `keep` | Leaves the toolbar to your theme. |
+
+```yaml
+background:
+  header: glass
+```
+
+> `transparent_header: true/false` from before 0.6.1 still works and maps to
+> `transparent` / `keep`.
 
 ---
 
@@ -145,19 +165,59 @@ weather_entity: weather.home
 glass: true
 ```
 
-Or spelled out (these are the defaults):
+Pick a preset — the same five Aurora Style uses:
+
+```yaml
+glass: frosted # glass | frosted | tinted | outline | minimal | plain
+```
+
+Or spell it out. Any value you set explicitly beats the preset it came from:
 
 ```yaml
 glass:
   enabled: true
+  preset: glass
   blur: 14 # backdrop blur in px, 0 disables
-  opacity: 0.5 # card surface opacity
+  opacity: 0.45 # card surface opacity
   saturate: 1.4 # backdrop saturation
   border: true
-  glow: 1.0 # ambient glow around cards, 0–2
+  glow: 0.8 # ambient glow around cards, 0–2
   radius: 18 # corner radius in px, -1 keeps your theme's
   adaptive_text: false # also drive --primary-text-color
 ```
+
+### Switching the whole dashboard's style, live
+
+Point `preset_entity` at any entity whose state is a preset name — an
+`input_select` is the obvious one:
+
+```yaml
+glass:
+  enabled: true
+  preset_entity: input_select.dashboard_style
+```
+
+```yaml
+# configuration.yaml
+input_select:
+  dashboard_style:
+    name: Dashboard style
+    options: [glass, frosted, tinted, outline, minimal, plain]
+    initial: glass
+```
+
+Drop an `entities` card with that helper on the dashboard and the whole thing
+restyles as you change it — no reload. An automation can do it too: frosted
+during the day when the sky is bright, minimal at night, `plain` when guests
+are over.
+
+German option names work as well (`milchglas`, `getönt`, `schlicht`, `aus`),
+because people name their helpers in their own language. `plain` switches
+Aurora Glass off entirely, so the dropdown doubles as an off switch.
+
+> When `preset_entity` resolves to a preset, that preset supplies **all** the
+> surface values — otherwise switching to `frosted` could not change a blur you
+> had pinned, which would be a confusing control.
 
 Glass writes only Home Assistant's documented `--ha-card-*` theme variables, so
 it works with any theme and any card. Turning it off removes every property it
@@ -252,7 +312,12 @@ card:
 | `frosted` | Heavier blur, more opaque — better over a busy sky. |
 | `tinted` | Solid surface that still takes the sky's colour. |
 | `outline` | Almost no surface, just a hairline and a whisper of blur. |
+| `minimal` | Flat, borderless, no glow. Quiet. |
 | `plain` | Hands the card straight back to your theme. |
+
+The same five presets drive **Aurora Glass** dashboard-wide, so `style: frosted`
+on a card and `preset: frosted` on the dashboard produce exactly the same
+surface — they read from one table.
 
 Override any preset value: `blur`, `opacity`, `saturate`, `glow`, `radius`,
 `border`.

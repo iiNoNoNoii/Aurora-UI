@@ -66,17 +66,19 @@
 
   glass:
     enabled: false # opt-in: restyles every card on the dashboard
-    blur: 14 # backdrop blur in px, 0 disables
-    opacity: 0.5 # card surface opacity
-    saturate: 1.4 # backdrop saturation
+    preset: glass # glass | frosted | tinted | outline | minimal | plain
+    # preset_entity: input_select.dashboard_style   # switch it live, see #19
+    blur: 14 # explicit values beat the preset they came from
+    opacity: 0.45
+    saturate: 1.4
     border: true
-    glow: 1.0 # ambient glow around cards, 0..2
-    radius: 18 # corner radius in px, -1 keeps your theme's
+    glow: 0.8
+    radius: 18 # -1 keeps your theme's
     adaptive_text: false # also drive --primary-text-color
 
   background:
     transparent_lovelace: true # make the dashboard surface see-through
-    transparent_header: true # also clear the toolbar background
+    header: auto # auto | glass | transparent | keep
     z_index: -1 # keep the layer behind every card
     ambient_variables: true # publish --aurora-* colours for themes and cards
     css_variables: {} # escape hatch, see below
@@ -136,6 +138,27 @@
     opacity: 0.62
     blur: 20
     glow: 0.5
+
+# ---------------------------------------------------------------------------
+# 9b. Switch the whole dashboard's style from a dropdown, live.
+#
+#     configuration.yaml:
+#       input_select:
+#         dashboard_style:
+#           name: Dashboard style
+#           options: [glass, frosted, tinted, outline, minimal, plain]
+#           initial: glass
+#
+#     Then put an entities card with input_select.dashboard_style on the
+#     dashboard. "plain" doubles as the off switch.
+# ---------------------------------------------------------------------------
+- type: custom:aurora-background
+  weather_entity: weather.home
+  glass:
+    enabled: true
+    preset_entity: input_select.dashboard_style
+  background:
+    header: glass
 
 # ---------------------------------------------------------------------------
 # 10. Aurora Light – the minimum.

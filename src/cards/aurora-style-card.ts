@@ -5,12 +5,17 @@ import { styleMap } from 'lit/directives/style-map.js';
 import type { HomeAssistant, LovelaceCard } from '../core/types';
 import { clamp } from '../core/math';
 import { childCardSize, createChildCard } from '../shared/card-factory';
+import {
+  SURFACE_PRESETS,
+  normalizePresetName,
+  type SurfaceOptions,
+  type SurfacePreset,
+} from '../core/surface-presets';
 
 export const STYLE_CARD_TYPE = 'aurora-style';
 
-export type AuroraStyleName = 'glass' | 'frosted' | 'tinted' | 'outline' | 'plain';
-
-const STYLE_NAMES: AuroraStyleName[] = ['glass', 'frosted', 'tinted', 'outline', 'plain'];
+/** Aurora Style and Aurora Glass share one preset table – see core/surface-presets.ts. */
+export type AuroraStyleName = SurfacePreset;
 
 export interface AuroraStyleConfigInput {
   type?: string;
@@ -24,28 +29,11 @@ export interface AuroraStyleConfigInput {
   border?: boolean;
 }
 
-interface StyleOptions {
-  blur: number;
-  opacity: number;
-  saturate: number;
-  glow: number;
-  radius: number;
-  border: boolean;
-}
-
-interface AuroraStyleConfig extends StyleOptions {
+interface AuroraStyleConfig extends SurfaceOptions {
   type: string;
   style: AuroraStyleName;
   card: Record<string, unknown>;
 }
-
-const PRESETS: Record<AuroraStyleName, StyleOptions> = {
-  glass: { blur: 14, opacity: 0.45, saturate: 1.4, glow: 0.8, radius: 18, border: true },
-  frosted: { blur: 26, opacity: 0.72, saturate: 1.15, glow: 0.3, radius: 20, border: true },
-  tinted: { blur: 0, opacity: 0.88, saturate: 1, glow: 0.5, radius: 16, border: false },
-  outline: { blur: 6, opacity: 0.1, saturate: 1.1, glow: 0.25, radius: 16, border: true },
-  plain: { blur: 0, opacity: 1, saturate: 1, glow: 0, radius: -1, border: true },
-};
 
 /**
  * Aurora Style — put any existing card into an Aurora surface.
@@ -99,10 +87,8 @@ export class AuroraStyleCard extends LitElement implements LovelaceCard {
       throw new Error('aurora-style: you need to set a "card"');
     }
 
-    const style: AuroraStyleName = STYLE_NAMES.includes(config.style as AuroraStyleName)
-      ? (config.style as AuroraStyleName)
-      : 'glass';
-    const preset = PRESETS[style];
+    const style: AuroraStyleName = normalizePresetName(config.style) ?? 'glass';
+    const preset = SURFACE_PRESETS[style];
 
     this.errorMessage = null;
     this.config = {

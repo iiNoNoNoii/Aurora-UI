@@ -2,11 +2,13 @@ import type {
   AuroraBackgroundConfig,
   AuroraBackgroundConfigInput,
   AuroraMode,
+  HeaderStyle,
   QualityLevel,
   QualityProfile,
   QualitySetting,
 } from './types';
 import { clamp } from './math';
+import { SURFACE_PRESETS, normalizePresetName } from './surface-presets';
 
 export const CARD_TYPE = 'aurora-background';
 export const CARD_NAME = 'Aurora Background';
@@ -165,8 +167,24 @@ export function normalizeConfig(input: AuroraBackgroundConfigInput | undefined):
   const appearance = raw.appearance ?? {};
   const performance = raw.performance ?? {};
   const background = raw.background ?? {};
-  // `glass: true` is shorthand for "on, with the defaults".
-  const glass = typeof raw.glass === 'boolean' ? { enabled: raw.glass } : (raw.glass ?? {});
+  // `glass: true` is shorthand for "on, with the defaults", and
+  // `glass: frosted` for "on, with that preset".
+  type GlassInput = Partial<AuroraBackgroundConfig['glass']> & { style?: string };
+  const glass: GlassInput =
+    typeof raw.glass === 'boolean'
+      ? { enabled: raw.glass }
+      : typeof raw.glass === 'string'
+        ? {
+            enabled: normalizePresetName(raw.glass) !== 'plain',
+            preset: normalizePresetName(raw.glass) ?? 'glass',
+          }
+        : ((raw.glass ?? {}) as GlassInput);
+
+  // `style` is accepted as an alias for `preset`, so a dashboard and a wrapped
+  // card can be configured with the same word.
+  const presetName =
+    normalizePresetName(glass.preset) ?? normalizePresetName(glass.style) ?? 'glass';
+  const preset = SURFACE_PRESETS[presetName];
 
   // `sun_entity: null` is an explicit "no sun entity, use the built-in solar model".
   const sunEntity =
@@ -224,7 +242,12 @@ export function normalizeConfig(input: AuroraBackgroundConfigInput | undefined):
     },
     background: {
       transparent_lovelace: bool(background.transparent_lovelace, true),
-      transparent_header: bool(background.transparent_header, true),
+      // `transparent_header: true/false` from before 0.6.1 still works.
+      header: oneOf<HeaderStyle>(
+        background.header,
+        ['auto', 'glass', 'transparent', 'keep'],
+        background.transparent_header === false ? 'keep' : 'auto'
+      ),
       css_variables: cssVars(background.css_variables),
       z_index: num(background.z_index, -1, -100, 100),
       ambient_variables: bool(background.ambient_variables, true),
@@ -233,12 +256,18 @@ export function normalizeConfig(input: AuroraBackgroundConfigInput | undefined):
       // Off by default: it restyles every card on the dashboard, which is a
       // decision the user should make rather than inherit.
       enabled: bool(glass.enabled, false),
-      blur: num(glass.blur, 14, 0, 40),
-      opacity: num(glass.opacity, 0.5, 0, 1),
-      saturate: num(glass.saturate, 1.4, 1, 3),
-      border: bool(glass.border, true),
-      glow: num(glass.glow, 1, 0, 2),
-      radius: num(glass.radius, 18, -1, 60),
+      preset: presetName,
+      preset_entity:
+        typeof glass.preset_entity === 'string' && glass.preset_entity.length > 0
+          ? glass.preset_entity
+          : undefined,
+      // An explicit number still beats the preset it came from.
+      blur: num(glass.blur, preset.blur, 0, 60),
+      opacity: num(glass.opacity, preset.opacity, 0, 1),
+      saturate: num(glass.saturate, preset.saturate, 1, 3),
+      border: bool(glass.border, preset.border),
+      glow: num(glass.glow, preset.glow, 0, 2),
+      radius: num(glass.radius, preset.radius, -1, 80),
       adaptive_text: bool(glass.adaptive_text, false),
     },
   };

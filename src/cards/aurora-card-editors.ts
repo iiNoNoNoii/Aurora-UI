@@ -204,6 +204,7 @@ const STYLE_SCHEMA = [
           { value: 'frosted', label: 'Frosted — heavier blur, more opaque' },
           { value: 'tinted', label: 'Tinted — solid, sky-coloured' },
           { value: 'outline', label: 'Outline — almost invisible surface' },
+          { value: 'minimal', label: 'Minimal — flat, borderless, no glow' },
           { value: 'plain', label: 'Plain — hand back to the theme' },
         ],
       },

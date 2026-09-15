@@ -17,16 +17,29 @@
         min-height: 300vh;
         background: var(--lovelace-background, var(--primary-background-color, #111418));
       }
+      /* Mirrors Home Assistant's toolbar: it takes its colours from the same
+         theme variables, so header modes can be checked here. */
       .header {
         position: sticky;
         top: 0;
         height: 56px;
         display: flex;
         align-items: center;
+        gap: 16px;
         padding: 0 16px;
-        color: #fff;
+        color: var(--app-header-text-color, var(--primary-text-color, #fff));
         font: 600 16px system-ui, sans-serif;
         background: var(--app-header-background-color, #1f2430);
+        -webkit-backdrop-filter: blur(16px);
+        backdrop-filter: blur(16px);
+      }
+      .header select {
+        margin-left: auto;
+        font: inherit;
+        font-size: 13px;
+        font-weight: 400;
+        padding: 4px 8px;
+        border-radius: 8px;
       }
       .view {
         padding: 16px;
@@ -68,7 +81,17 @@
   </head>
   <body>
     <home-assistant>
-      <div class="header">Aurora demo dashboard</div>
+      <div class="header">
+        Aurora demo dashboard
+        <select id="preset">
+          <option value="glass">glass</option>
+          <option value="frosted">frosted</option>
+          <option value="tinted">tinted</option>
+          <option value="outline">outline</option>
+          <option value="minimal">minimal</option>
+          <option value="plain">plain</option>
+        </select>
+      </div>
       <div class="view" id="view"></div>
     </home-assistant>
 
@@ -90,13 +113,22 @@
         sun_entity: 'sun.sun',
         quality: 'high',
         debug: !params.has('nodebug'),
-        glass: params.has('glass'),
+        glass: {
+          enabled: params.has('glass'),
+          // Live style switching, driven by a mock input_select.
+          preset_entity: 'input_select.dashboard_style',
+        },
       });
       view.appendChild(card);
 
-      card.hass = {
+      const buildHass = (style) => ({
         config: { latitude: 51.2, longitude: 6.8, time_zone: 'Europe/Berlin', unit_system: {} },
         states: {
+          'input_select.dashboard_style': {
+            entity_id: 'input_select.dashboard_style',
+            state: style,
+            attributes: {},
+          },
           'sun.sun': {
             entity_id: 'sun.sun',
             state: elevation > 0 ? 'above_horizon' : 'below_horizon',
@@ -108,7 +140,14 @@
             attributes: { temperature: 14, wind_speed: 18, wind_speed_unit: 'km/h' },
           },
         },
+      });
+
+      const presetSelect = document.getElementById('preset');
+      const pushHass = () => {
+        card.hass = buildHass(presetSelect.value);
       };
+      presetSelect.addEventListener('change', pushHass);
+      pushHass();
 
       // Regular cards on top, to check stacking and hit-testing.
       // `?nocards` clears the view when the sky itself is what needs looking at.

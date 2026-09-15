@@ -1,4 +1,4 @@
-import type { AuroraBackgroundConfig, HomeAssistant, QualityLevel } from './types';
+import type { AuroraBackgroundConfig, GlassConfig, HomeAssistant, QualityLevel } from './types';
 import { detectQuality, getQualityProfile } from './config';
 import { AnimationEngine } from './animation-engine';
 import { PerformanceManager } from './performance-manager';
@@ -8,6 +8,7 @@ import { GlassStyles } from './glass-styles';
 import { DebugOverlay } from '../ui/debug-overlay';
 import { readEnvironment } from '../weather/weather-engine';
 import { clamp } from './math';
+import { SURFACE_PRESETS, normalizePresetName } from './surface-presets';
 
 /** Hard ceiling on backing-store pixels, so 4K wallpanels stay smooth. */
 const MAX_BACKING_PIXELS = 4_200_000;
@@ -49,6 +50,11 @@ export class AuroraLayer {
   private firstFrame = true;
   /** Wall-clock timer that refreshes the computed sun position without HA. */
   private environmentTimer: number | null = null;
+
+  /** Glass options with any entity-driven preset already applied. */
+  private resolvedGlass: GlassConfig | null = null;
+  /** Set when the preset changed, so the next frame writes past the throttle. */
+  private glassDirty = false;
 
   /** Latest raw parallax inputs, in normalised units. */
   private scrollOffset = 0;
@@ -147,7 +153,8 @@ export class AuroraLayer {
     }
 
     if (this.ambient && !config.background.ambient_variables) this.ambient.clear();
-    if (this.glass && !config.glass.enabled) this.glass.clear();
+    this.resolveGlass();
+    if (this.glass && !this.activeGlass.enabled) this.glass.clear();
 
     this.pushParallax();
     this.refreshEnvironment();
@@ -348,8 +355,49 @@ export class AuroraLayer {
   private readonly refreshEnvironment = (): void => {
     if (this.destroyed) return;
     this.scene.setEnvironment(readEnvironment(this.hass, this.config));
+    this.resolveGlass();
     if (!this.engine.isRunning) this.renderOnce();
   };
+
+  /**
+   * Apply an entity-driven surface preset, if one is configured.
+   *
+   * Resolved here rather than per frame: this allocates an object, and the
+   * entity changes when somebody flips a dropdown, not sixty times a second.
+   * When `preset_entity` names a valid preset it wins over the individual
+   * numbers — switching a preset that then could not change the blur would be
+   * a confusing control.
+   */
+  private resolveGlass(): void {
+    const glass = this.config.glass;
+    const entityId = glass.preset_entity;
+    if (!entityId) {
+      this.resolvedGlass = null;
+      return;
+    }
+
+    const preset = normalizePresetName(this.hass?.states?.[entityId]?.state);
+    if (!preset) {
+      if (this.resolvedGlass) this.glassDirty = true;
+      this.resolvedGlass = null;
+      return;
+    }
+
+    // Somebody just flipped a dropdown; they should not wait out the throttle.
+    if (this.resolvedGlass?.preset !== preset) this.glassDirty = true;
+
+    this.resolvedGlass = {
+      ...glass,
+      ...SURFACE_PRESETS[preset],
+      preset,
+      // `plain` is how the user turns the whole thing off from the dropdown.
+      enabled: glass.enabled && preset !== 'plain',
+    };
+  }
+
+  private get activeGlass(): GlassConfig {
+    return this.resolvedGlass ?? this.config.glass;
+  }
 
   private updateRunState(): void {
     const shouldRun =
@@ -434,7 +482,8 @@ export class AuroraLayer {
     if (this.ambient && this.config.background.ambient_variables) {
       this.ambient.update(this.scene.sceneState);
     }
-    this.glass?.update(this.scene.sceneState, this.config.glass);
+    this.glass?.update(this.scene.sceneState, this.activeGlass, this.glassDirty);
+    this.glassDirty = false;
 
     if (this.debugOverlay) {
       this.debugOverlay.update(
@@ -465,7 +514,8 @@ export class AuroraLayer {
     if (this.ambient && this.config.background.ambient_variables) {
       this.ambient.update(this.scene.sceneState, true);
     }
-    this.glass?.update(this.scene.sceneState, this.config.glass, true);
+    this.glass?.update(this.scene.sceneState, this.activeGlass, true);
+    this.glassDirty = false;
 
     this.debugOverlay?.update(
       this.scene.sceneState,

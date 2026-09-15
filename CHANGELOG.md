@@ -4,6 +4,39 @@ All notable changes to Aurora UI are documented here.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and the project uses [Semantic Versioning](https://semver.org/).
 
+## [0.6.1-alpha] – 2026-09-15
+
+From a screenshot of a real dashboard: the toolbar stayed an opaque slab across
+the top, and switching the whole dashboard's style needed editing YAML.
+
+### Added
+
+- **One preset table** (`core/surface-presets.ts`) shared by Aurora Glass and
+  Aurora Style, so `style: frosted` on a card and `preset: frosted` on the
+  dashboard produce the same surface. New `minimal` preset: flat, borderless,
+  no glow.
+- **`glass.preset`** — pick a named surface for the whole dashboard.
+  `glass: frosted` is shorthand for enabling it with that preset.
+- **`glass.preset_entity`** — follow any entity whose state is a preset name,
+  typically an `input_select`. The dashboard restyles live from a dropdown, an
+  automation, or the time of day, with no reload. German option names are
+  accepted too, and `plain` doubles as the off switch.
+- **`background.header`** with four modes. `glass` gives the toolbar a
+  translucent, sky-tinted surface and a matching text colour, which is what a
+  dark sky actually needs — a fully transparent toolbar drops the theme's dark
+  text straight onto it. `auto` (the new default) picks `glass` when Aurora
+  Glass is on and `transparent` otherwise. `transparent_header: true/false`
+  still works and maps to `transparent` / `keep`.
+
+### Fixed
+
+- Aurora Glass ignored a preset change that altered only blur and opacity.
+  Its change gate compared the sky colours but not the options themselves, so
+  switching `frosted` → `minimal` short-circuited and never reached the
+  document. The options are part of the gate now.
+- A preset change writes immediately instead of waiting out the 500 ms write
+  throttle — somebody flipping a dropdown should not watch for half a second.
+
 ## [0.6.0-alpha] – 2026-09-15
 
 Aurora Layout, Aurora Style, and the sky pushed as far as a canvas goes.
@@ -334,6 +367,7 @@ First working release. Everything in this list is implemented and rendering.
 - Nothing has been exercised inside a real Home Assistant yet; every check so
   far ran against a faithful mock.
 
+[0.6.1-alpha]: https://github.com/iiNoNoNoii/Aurora-UI/releases/tag/v0.6.1-alpha
 [0.6.0-alpha]: https://github.com/iiNoNoNoii/Aurora-UI/releases/tag/v0.6.0-alpha
 [0.5.3-alpha]: https://github.com/iiNoNoNoii/Aurora-UI/releases/tag/v0.5.3-alpha
 [0.5.2-alpha]: https://github.com/iiNoNoNoii/Aurora-UI/releases/tag/v0.5.2-alpha

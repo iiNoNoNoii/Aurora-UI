@@ -44,6 +44,13 @@ export class GlassStyles {
   private lastSurface: RGB | null = null;
   private lastAccent: RGB | null = null;
   private lastGlow = -1;
+  /**
+   * The options themselves are part of the gate, not just the colours.
+   * Without this, switching preset from `frosted` to `minimal` changed only
+   * blur and opacity — the sky colour was identical, so the gate short-circuited
+   * and the new preset never reached the document.
+   */
+  private lastOptions = '';
   private lastWrite = 0;
   private active = false;
   private textActive = false;
@@ -71,10 +78,21 @@ export class GlassStyles {
       clamp01(scene.dayFactor * 0.5 + scene.twilightFactor * 0.9 + scene.nightFactor * 0.25) *
       glass.glow;
 
+    const options = [
+      glass.blur,
+      glass.opacity,
+      glass.saturate,
+      glass.glow,
+      glass.radius,
+      glass.border,
+      glass.adaptive_text,
+    ].join('|');
+
     if (
       !force &&
       this.lastSurface &&
       this.lastAccent &&
+      options === this.lastOptions &&
       colorDistanceSq(this.lastSurface, surface) < COLOR_THRESHOLD &&
       colorDistanceSq(this.lastAccent, accent) < COLOR_THRESHOLD &&
       Math.abs(this.lastGlow - glowStrength) < 0.03
@@ -87,6 +105,7 @@ export class GlassStyles {
     this.lastSurface = surface;
     this.lastAccent = accent;
     this.lastGlow = glowStrength;
+    this.lastOptions = options;
     this.active = true;
 
     const root = document.documentElement.style;
@@ -157,5 +176,6 @@ export class GlassStyles {
     this.lastSurface = null;
     this.lastAccent = null;
     this.lastGlow = -1;
+    this.lastOptions = '';
   }
 }

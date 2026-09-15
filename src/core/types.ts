@@ -1,3 +1,5 @@
+import type { SurfacePreset } from './surface-presets';
+
 /**
  * Aurora Background – shared types.
  *
@@ -98,8 +100,16 @@ export interface PerformanceConfig {
 export interface BackgroundLayerConfig {
   /** Make Lovelace/HA surfaces transparent so the layer is actually visible. */
   transparent_lovelace: boolean;
-  /** Also clear the dashboard header background. */
-  transparent_header: boolean;
+  /**
+   * The dashboard toolbar.
+   *
+   * `glass` gives it a translucent, sky-tinted surface with readable text —
+   * usually what you want, because a fully transparent header puts the theme's
+   * dark toolbar text straight onto a dark sky. `transparent` clears it
+   * completely, `keep` leaves the theme alone, and `auto` picks `glass` when
+   * Aurora Glass is on and `transparent` otherwise.
+   */
+  header: HeaderStyle;
   /** Extra CSS custom properties to force on :root (escape hatch for themes). */
   css_variables: Record<string, string>;
   /** z-index of the fixed layer. Negative keeps it behind all dashboard content. */
@@ -112,9 +122,20 @@ export interface BackgroundLayerConfig {
   ambient_variables: boolean;
 }
 
+/** How the dashboard toolbar is treated. */
+export type HeaderStyle = 'auto' | 'glass' | 'transparent' | 'keep';
+
 /** Aurora Glass – translucent, sky-tinted Lovelace cards. Opt-in. */
 export interface GlassConfig {
   enabled: boolean;
+  /** Named surface preset. Explicit numbers below still win over it. */
+  preset: SurfacePreset;
+  /**
+   * Follow an entity's state instead — any entity whose state is a preset
+   * name, typically an `input_select`. Lets the whole dashboard switch style
+   * from a dropdown, an automation or the time of day.
+   */
+  preset_entity?: string;
   /** Backdrop blur in px behind each card. 0 disables the blur. */
   blur: number;
   /** Card surface opacity, 0..1. */
@@ -161,8 +182,8 @@ export type AuroraBackgroundConfigInput = {
   effects?: Partial<EffectsConfig>;
   appearance?: Partial<AppearanceConfig>;
   performance?: Partial<PerformanceConfig>;
-  background?: Partial<BackgroundLayerConfig>;
-  glass?: Partial<GlassConfig> | boolean;
+  background?: Partial<BackgroundLayerConfig> & { transparent_header?: boolean };
+  glass?: (Partial<GlassConfig> & { style?: string }) | boolean | string;
 };
 
 /** Resolved, quality-dependent budgets handed to the renderers. */

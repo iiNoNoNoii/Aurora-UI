@@ -1,4 +1,4 @@
-import type { AuroraBackgroundConfig, HomeAssistant } from './types';
+import type { AuroraBackgroundConfig, HeaderStyle, HomeAssistant } from './types';
 import { AuroraLayer } from './aurora-layer';
 
 /**
@@ -145,7 +145,9 @@ class BackgroundMount {
   }
 
   private applyGlobalStyles(config: AuroraBackgroundConfig): void {
-    if (!config.background.transparent_lovelace && !config.background.transparent_header) {
+    const headerStyle = resolveHeaderStyle(config);
+
+    if (!config.background.transparent_lovelace && headerStyle === 'keep') {
       const extra = buildCustomProperties(config);
       this.writeStyle(extra ? `:root{${extra}}` : '');
       return;
@@ -168,9 +170,26 @@ class BackgroundMount {
       );
     }
 
-    if (config.background.transparent_header) {
+    if (headerStyle === 'transparent') {
       rootProps.push('--app-header-background-color:transparent !important');
-      rootProps.push('--header-height-background:transparent !important');
+      rootProps.push('--app-header-border-bottom:none !important');
+      rootProps.push('--app-header-box-shadow:none !important');
+    } else if (headerStyle === 'glass') {
+      // A fully transparent toolbar drops the theme's dark toolbar text onto a
+      // dark sky. A translucent, sky-tinted bar with a matching text colour is
+      // both better looking and actually readable.
+      rootProps.push(
+        '--app-header-background-color:rgba(var(--aurora-surface-rgb,22,26,36),0.55) !important'
+      );
+      rootProps.push(
+        '--app-header-text-color:var(--aurora-contrast-color,#f2f6ff) !important'
+      );
+      rootProps.push('--app-header-border-bottom:none !important');
+      rootProps.push('--app-header-box-shadow:none !important');
+      // The sidebar sits on the same surface.
+      rootProps.push(
+        '--sidebar-background-color:rgba(var(--aurora-surface-rgb,22,26,36),0.82) !important'
+      );
     }
 
     const extra = buildCustomProperties(config);
@@ -195,6 +214,12 @@ class BackgroundMount {
       this.styleElement.textContent = css;
     }
   }
+}
+
+/** `auto` follows Aurora Glass: glass toolbar with it, transparent without. */
+function resolveHeaderStyle(config: AuroraBackgroundConfig): HeaderStyle {
+  if (config.background.header !== 'auto') return config.background.header;
+  return config.glass.enabled ? 'glass' : 'transparent';
 }
 
 function buildCustomProperties(config: AuroraBackgroundConfig): string {
