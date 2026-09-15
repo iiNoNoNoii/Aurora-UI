@@ -11,11 +11,14 @@ src/
 │   ├── math.ts                      lerp / smoothstep / damp / seeded RNG
 │   ├── color.ts                     RGB helpers
 │   ├── palette.ts                   the sky colour model
+│   ├── season.ts                    hemisphere-aware seasonal cast
 │   ├── solar.ts                     sun position fallback + moon phase
 │   ├── animation-engine.ts          one rAF loop with a frame cap
 │   ├── performance-manager.ts       frame-cost sampling and quality steps
 │   ├── scene-manager.ts             HA state -> SceneState, renderer order
 │   ├── aurora-layer.ts              canvas, listeners, lifecycle
+│   ├── ambient-variables.ts         publishes --aurora-* to the document
+│   ├── glass-styles.ts              Aurora Glass: drives --ha-card-*
 │   └── background-mount.ts          the fixed full-viewport layer (singleton)
 │
 ├── renderers/
@@ -23,7 +26,11 @@ src/
 │   ├── star-renderer.ts
 │   ├── moon-renderer.ts
 │   ├── sun-renderer.ts
-│   └── cloud-renderer.ts
+│   ├── cloud-renderer.ts
+│   ├── fog-renderer.ts
+│   ├── rain-renderer.ts
+│   ├── snow-renderer.ts
+│   └── lightning-renderer.ts
 │
 ├── weather/
 │   ├── weather-mapping.ts           HA condition -> WeatherProfile
@@ -39,6 +46,7 @@ src/
 ```
 hass ──▶ readEnvironment() ──▶ EnvironmentSnapshot
                                      │
+             computeSeason() ────────┤
                                      ├─▶ WeatherBlender  (4 s cross-fade)
                                      └─▶ damped elevation/azimuth (1.5 s)
                                                  │
@@ -46,10 +54,16 @@ hass ──▶ readEnvironment() ──▶ EnvironmentSnapshot
                                                  │
                                         dampPalette (0.6 s)
                                                  │
-                                            SceneState
-                                                 │
-             sky ▸ stars ▸ moon ▸ sun ▸ clouds   (painter's order)
+                                            SceneState ──▶ AmbientVariables
+                                                 │         GlassStyles
+                                                 │         (throttled, gated)
+                                                 ▼
+   sky ▸ stars ▸ moon ▸ sun ▸ clouds ▸ fog ▸ rain ▸ snow ▸ lightning
 ```
+
+Painter's order runs back to front: the sky, then the celestial bodies, then
+the clouds, then everything that happens between the clouds and the viewer.
+Lightning is last because a flash lights the whole scene.
 
 Nothing snaps. Every input that Home Assistant can change abruptly – the
 weather state, `sun.sun` elevation after a 30 s update – is passed through an
@@ -102,6 +116,33 @@ card may connect before the old one disconnects – the mount hands the shared
 layer over instead of destroying and rebuilding it, and only unmounts when the
 last owner is gone. That also restores the dashboard's own background.
 
+## Writing to the document
+
+Two modules reach outside the canvas: `ambient-variables.ts` publishes the sky
+as `--aurora-*` properties, and `glass-styles.ts` drives Home Assistant's
+`--ha-card-*` variables for Aurora Glass.
+
+Setting a custom property on `<html>` invalidates style for the entire
+document, so both are guarded the same way: a minimum interval between writes
+(400 ms / 500 ms) *and* a change gate that skips the write when no colour moved
+far enough to be visible. Both also implement `clear()`, which removes every
+property they own — turning Glass off hands the dashboard straight back to the
+user's theme, and unmounting the last Aurora card leaves no trace.
+
+Only the shared background layer writes these; a `mode: card` layer never does,
+so two Aurora cards on one dashboard cannot fight over the document.
+
+## Parallax input
+
+`scroll` does not bubble, and Home Assistant scrolls an inner element rather
+than the window. The layer therefore listens in the **capture** phase on
+`document`, which sees scroll events from whichever container the current view
+happens to use, and reads `scrollTop` off `event.target`. The offset saturates
+after one viewport so a long dashboard cannot push the sky away.
+
+Pointer parallax is only registered behind a `(pointer: fine)` media query —
+on touch there is no hover and the listener would never fire.
+
 ## Home Assistant integration
 
 The card reacts to `hass` assignments, but Home Assistant pushes a new `hass`
@@ -115,7 +156,7 @@ The only public frontend API used is:
 - `setConfig` / `getCardSize` / `getGridOptions` / `getStubConfig` /
   `getConfigElement`,
 - `window.customCards`,
-- the `--lovelace-background` theme variable,
+- the `--lovelace-background` and `--ha-card-*` theme variables,
 - `ha-form` in the editor (with a YAML fallback if it is unavailable).
 
 No internal Home Assistant element is queried or modified.

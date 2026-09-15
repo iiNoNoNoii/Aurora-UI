@@ -42,8 +42,8 @@ export class MoonRenderer implements Renderer {
       this.drawnPhase = quantisedPhase;
     }
 
-    const x = scene.moonX * scene.width;
-    const y = scene.moonY * scene.height;
+    const x = scene.moonX * scene.width + scene.parallaxX * 0.12;
+    const y = scene.moonY * scene.height + scene.parallaxY * 0.12;
 
     ctx.save();
 

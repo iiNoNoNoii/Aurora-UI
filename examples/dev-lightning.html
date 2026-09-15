@@ -1,0 +1,156 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Aurora Background – lightning bench</title>
+    <style>
+      body {
+        margin: 0;
+        padding: 20px;
+        background: #05070f;
+        color: #cfe0f5;
+        font: 13px system-ui, sans-serif;
+      }
+      h3 {
+        margin: 0 0 4px;
+      }
+      p {
+        margin: 0 0 14px;
+        opacity: 0.6;
+      }
+      canvas {
+        border-radius: 12px;
+        display: block;
+        background: #10131c;
+      }
+      .grid {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 12px;
+        margin-top: 16px;
+      }
+      figure {
+        margin: 0;
+      }
+      figure img {
+        width: 100%;
+        border-radius: 10px;
+        display: block;
+      }
+      figcaption {
+        font-family: ui-monospace, Menlo, Consolas, monospace;
+        font-size: 11px;
+        opacity: 0.7;
+        margin-top: 5px;
+      }
+    </style>
+  </head>
+  <body>
+    <h3>Lightning bench</h3>
+    <p>
+      Drives <code>LightningRenderer</code> from source with a fixed 1/60 s clock, so strikes
+      can be inspected without waiting for a storm. Requires the Vite dev server
+      (<code>npx vite</code>) – it imports TypeScript directly.
+    </p>
+
+    <canvas id="live" width="640" height="300"></canvas>
+    <div class="grid" id="peaks"></div>
+
+    <script type="module">
+      import { LightningRenderer } from '../src/renderers/lightning-renderer.ts';
+
+      const canvas = document.getElementById('live');
+      const ctx = canvas.getContext('2d');
+      const W = canvas.width;
+      const H = canvas.height;
+
+      // The minimum a SceneState needs to be for this renderer.
+      const scene = {
+        time: 0,
+        dt: 1 / 60,
+        width: W,
+        height: H,
+        pixelRatio: 1,
+        weather: { lightning: 1, rain: 1, wind: 0.7 },
+        appearance: { intensity: 1 },
+        quality: { lightningBolts: true },
+        reducedMotion: false,
+      };
+
+      const renderer = new LightningRenderer();
+      renderer.setup(scene);
+
+      const probe = document.createElement('canvas');
+      probe.width = 1;
+      probe.height = 1;
+      const probeCtx = probe.getContext('2d', { willReadFrequently: true });
+
+      // Keep the four brightest distinct frames we see.
+      const peaks = [];
+
+      function stormBackdrop() {
+        const g = ctx.createLinearGradient(0, 0, 0, H);
+        g.addColorStop(0, '#161c2b');
+        g.addColorStop(1, '#2b3346');
+        ctx.fillStyle = g;
+        ctx.fillRect(0, 0, W, H);
+      }
+
+      const STEPS = 60 * 45; // 45 simulated seconds
+      let step = 0;
+      let lastCapture = -999;
+      let strikes = 0;
+      let wasActive = false;
+      let maxLuminance = 0;
+
+      function advance(count) {
+        for (let i = 0; i < count && step < STEPS; i++, step++) {
+          scene.time += scene.dt;
+          stormBackdrop();
+          renderer.render(ctx, scene);
+
+          const active = renderer.particleCount() > 0;
+          if (active && !wasActive) strikes++;
+          wasActive = active;
+
+          probeCtx.drawImage(canvas, W * 0.4, H * 0.1, 1, 1, 0, 0, 1, 1);
+          const d = probeCtx.getImageData(0, 0, 1, 1).data;
+          const lum = 0.2126 * d[0] + 0.7152 * d[1] + 0.0722 * d[2];
+          if (lum > maxLuminance) maxLuminance = lum;
+
+          // ~46 is the backdrop's own luminance up there; brighter means a flash.
+          if (lum > 52 && step - lastCapture > 90 && peaks.length < 4) {
+            lastCapture = step;
+            peaks.push({ t: (step / 60).toFixed(1), lum: Math.round(lum), url: canvas.toDataURL() });
+          }
+        }
+      }
+
+      // setInterval, not rAF: this bench must run even when the page is not painting.
+      const timer = setInterval(() => {
+        advance(60);
+        if (step >= STEPS) {
+          clearInterval(timer);
+          const host = document.getElementById('peaks');
+          for (const p of peaks) {
+            const fig = document.createElement('figure');
+            const img = new Image();
+            img.src = p.url;
+            const cap = document.createElement('figcaption');
+            cap.textContent = `t=${p.t}s  luminance ${p.lum}`;
+            fig.append(img, cap);
+            host.appendChild(fig);
+          }
+          window.__lightningResult = {
+            simulatedSeconds: STEPS / 60,
+            strikes,
+            secondsPerStrike: strikes ? +(STEPS / 60 / strikes).toFixed(1) : null,
+            maxProbeLuminance: Math.round(maxLuminance),
+            backdropLuminance: 46,
+            framesCaptured: peaks.length,
+          };
+        }
+      }, 16);
+    </script>
+  </body>
+</html>

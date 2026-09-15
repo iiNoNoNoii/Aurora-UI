@@ -31,6 +31,10 @@ const QUALITY_PROFILES: Record<QualityLevel, QualityProfile> = {
     cloudSpriteSize: 192,
     sunGlowPasses: 1,
     shootingStars: false,
+    rainParticles: 100,
+    snowParticles: 50,
+    fogLayers: 2,
+    lightningBolts: false,
     maxFps: 30,
   },
   medium: {
@@ -43,6 +47,10 @@ const QUALITY_PROFILES: Record<QualityLevel, QualityProfile> = {
     cloudSpriteSize: 256,
     sunGlowPasses: 2,
     shootingStars: false,
+    rainParticles: 220,
+    snowParticles: 110,
+    fogLayers: 3,
+    lightningBolts: true,
     maxFps: 45,
   },
   high: {
@@ -55,6 +63,10 @@ const QUALITY_PROFILES: Record<QualityLevel, QualityProfile> = {
     cloudSpriteSize: 320,
     sunGlowPasses: 3,
     shootingStars: true,
+    rainParticles: 400,
+    snowParticles: 200,
+    fogLayers: 4,
+    lightningBolts: true,
     maxFps: 60,
   },
   ultra: {
@@ -67,6 +79,10 @@ const QUALITY_PROFILES: Record<QualityLevel, QualityProfile> = {
     cloudSpriteSize: 384,
     sunGlowPasses: 4,
     shootingStars: true,
+    rainParticles: 650,
+    snowParticles: 320,
+    fogLayers: 5,
+    lightningBolts: true,
     maxFps: 60,
   },
 };
@@ -149,6 +165,8 @@ export function normalizeConfig(input: AuroraBackgroundConfigInput | undefined):
   const appearance = raw.appearance ?? {};
   const performance = raw.performance ?? {};
   const background = raw.background ?? {};
+  // `glass: true` is shorthand for "on, with the defaults".
+  const glass = typeof raw.glass === 'boolean' ? { enabled: raw.glass } : (raw.glass ?? {});
 
   // `sun_entity: null` is an explicit "no sun entity, use the built-in solar model".
   const sunEntity =
@@ -185,6 +203,8 @@ export function normalizeConfig(input: AuroraBackgroundConfigInput | undefined):
       snow: bool(effects.snow, true),
       fog: bool(effects.fog, true),
       lightning: bool(effects.lightning, true),
+      season: bool(effects.season, true),
+      parallax: bool(effects.parallax, true),
     },
     appearance: {
       intensity: num(appearance.intensity, 1, 0, 2),
@@ -204,6 +224,19 @@ export function normalizeConfig(input: AuroraBackgroundConfigInput | undefined):
       transparent_header: bool(background.transparent_header, true),
       css_variables: cssVars(background.css_variables),
       z_index: num(background.z_index, -1, -100, 100),
+      ambient_variables: bool(background.ambient_variables, true),
+    },
+    glass: {
+      // Off by default: it restyles every card on the dashboard, which is a
+      // decision the user should make rather than inherit.
+      enabled: bool(glass.enabled, false),
+      blur: num(glass.blur, 14, 0, 40),
+      opacity: num(glass.opacity, 0.5, 0, 1),
+      saturate: num(glass.saturate, 1.4, 1, 3),
+      border: bool(glass.border, true),
+      glow: num(glass.glow, 1, 0, 2),
+      radius: num(glass.radius, 18, -1, 60),
+      adaptive_text: bool(glass.adaptive_text, false),
     },
   };
 }

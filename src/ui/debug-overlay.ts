@@ -62,7 +62,10 @@ export class DebugOverlay {
       `phase        ${scene.sunRising ? 'rising' : 'setting'}`,
       `day/night    ${scene.dayFactor.toFixed(2)} / ${scene.nightFactor.toFixed(2)}  twilight ${scene.twilightFactor.toFixed(2)}`,
       `cloud cover  ${scene.weather.cloudCover.toFixed(2)}  wind ${scene.weather.wind.toFixed(2)}`,
+      `precip       rain ${scene.weather.rain.toFixed(2)}  snow ${scene.weather.snow.toFixed(2)}  fog ${scene.weather.fog.toFixed(2)}  lgt ${scene.weather.lightning.toFixed(2)}`,
       `moon         ${scene.moonVisible ? 'visible' : 'hidden'}  phase ${scene.moonPhase.toFixed(2)}`,
+      `season       ${scene.season.name}  warmth ${scene.season.warmth.toFixed(2)}`,
+      `parallax     ${scene.parallaxX.toFixed(1)} / ${scene.parallaxY.toFixed(1)} px`,
       `reduced mo.  ${scene.reducedMotion ? 'yes' : 'no'}`,
     ];
 

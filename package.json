@@ -1,6 +1,6 @@
 {
   "name": "aurora-background",
-  "version": "0.1.0-alpha",
+  "version": "0.4.0-alpha",
   "description": "Aurora UI – Aurora Background: procedural, weather- and sun-aware animated background for Home Assistant Lovelace dashboards.",
   "type": "module",
   "license": "MIT",

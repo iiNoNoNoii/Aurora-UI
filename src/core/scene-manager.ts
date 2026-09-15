@@ -3,10 +3,13 @@ import type {
   QualityProfile,
   Renderer,
   SceneState,
+  SeasonProfile,
   SkyPalette,
+  WeatherProfile,
 } from './types';
 import { clamp, clamp01, damp, lerp } from './math';
 import { computePalette, dampPalette, daylightFactors } from './palette';
+import { computeSeason } from './season';
 import { computeMoonPhase, computeMoonPosition } from './solar';
 import type { EnvironmentSnapshot } from '../weather/weather-engine';
 import { WeatherBlender, snapshotToProfile } from '../weather/weather-engine';
@@ -16,6 +19,10 @@ import { StarRenderer } from '../renderers/star-renderer';
 import { MoonRenderer } from '../renderers/moon-renderer';
 import { SunRenderer } from '../renderers/sun-renderer';
 import { CloudRenderer } from '../renderers/cloud-renderer';
+import { FogRenderer } from '../renderers/fog-renderer';
+import { RainRenderer } from '../renderers/rain-renderer';
+import { SnowRenderer } from '../renderers/snow-renderer';
+import { LightningRenderer } from '../renderers/lightning-renderer';
 
 /**
  * Owns the renderer stack and turns Home Assistant state into a `SceneState`.
@@ -29,6 +36,10 @@ export class SceneManager {
   private readonly moon = new MoonRenderer();
   private readonly sun = new SunRenderer();
   private readonly clouds = new CloudRenderer();
+  private readonly fog = new FogRenderer();
+  private readonly rain = new RainRenderer();
+  private readonly snow = new SnowRenderer();
+  private readonly lightning = new LightningRenderer();
 
   /** Painter's order, back to front. */
   private readonly renderers: Renderer[];
@@ -43,7 +54,14 @@ export class SceneManager {
   private snapshot: EnvironmentSnapshot;
   private config: AuroraBackgroundConfig;
   private quality: QualityProfile;
+  private season: SeasonProfile;
   private reducedMotion = false;
+
+  /** Raw parallax target set from outside; the scene smooths its way there. */
+  private parallaxTargetX = 0;
+  private parallaxTargetY = 0;
+  private parallaxX = 0;
+  private parallaxY = 0;
 
   private state: SceneState;
   private initialised = false;
@@ -57,10 +75,22 @@ export class SceneManager {
     this.quality = quality;
     this.snapshot = snapshot;
 
-    this.renderers = [this.sky, this.stars, this.moon, this.sun, this.clouds];
+    this.renderers = [
+      this.sky,
+      this.stars,
+      this.moon,
+      this.sun,
+      this.clouds,
+      this.fog,
+      this.rain,
+      this.snow,
+      this.lightning,
+    ];
+
+    this.season = computeSeason(new Date(), snapshot.latitude);
 
     this.blender = new WeatherBlender(conditionToProfile(snapshot.condition));
-    this.blender.snapTo(snapshotToProfile(snapshot));
+    this.blender.snapTo(this.targetProfile());
 
     this.elevation = snapshot.sunElevation;
     this.azimuth = snapshot.sunAzimuth;
@@ -70,6 +100,7 @@ export class SceneManager {
       rising: snapshot.sunRising,
       weather: this.blender.value,
       appearance: config.appearance,
+      season: config.effects.season ? this.season : null,
     });
 
     this.state = this.createState();
@@ -96,6 +127,9 @@ export class SceneManager {
       moonPhase: 0.5,
       palette: this.palette,
       weather: this.blender.value,
+      season: this.season,
+      parallaxX: 0,
+      parallaxY: 0,
       quality: this.quality,
       appearance: this.config.appearance,
       effects: this.config.effects,
@@ -117,9 +151,13 @@ export class SceneManager {
   }
 
   setConfig(config: AuroraBackgroundConfig): void {
+    const seasonToggled = config.effects.season !== this.config.effects.season;
     this.config = config;
     this.state.appearance = config.appearance;
     this.state.effects = config.effects;
+    // The season contributes haze to the weather target, so a toggle has to
+    // re-derive it instead of waiting for the next environment refresh.
+    if (seasonToggled) this.blender.setTarget(this.targetProfile());
   }
 
   /** Called when the quality level changed – renderers rebuild their buffers. */
@@ -134,7 +172,31 @@ export class SceneManager {
   /** New Home Assistant data. Cheap – the blending happens per frame. */
   setEnvironment(snapshot: EnvironmentSnapshot): void {
     this.snapshot = snapshot;
-    this.blender.setTarget(snapshotToProfile(snapshot));
+    this.season = computeSeason(new Date(), snapshot.latitude);
+    this.state.season = this.season;
+    this.blender.setTarget(this.targetProfile());
+  }
+
+  /**
+   * Parallax offset in CSS pixels, supplied by the layer from scroll and
+   * pointer input. The scene smooths it so a flicked scroll does not snap.
+   */
+  setParallaxTarget(x: number, y: number): void {
+    this.parallaxTargetX = x;
+    this.parallaxTargetY = y;
+  }
+
+  /**
+   * The weather target with the season's haze folded in. Season changes over
+   * weeks, so treating it as part of the weather target and letting the normal
+   * cross-fade carry it is both correct and free.
+   */
+  private targetProfile(): WeatherProfile {
+    const profile = snapshotToProfile(this.snapshot);
+    if (this.config.effects.season) {
+      profile.fog = clamp01(profile.fog + this.season.haze * 0.5);
+    }
+    return profile;
   }
 
   resize(width: number, height: number, pixelRatio: number): void {
@@ -152,12 +214,15 @@ export class SceneManager {
   snapToTargets(): void {
     this.elevation = this.snapshot.sunElevation;
     this.azimuth = this.snapshot.sunAzimuth;
-    this.blender.snapTo(snapshotToProfile(this.snapshot));
+    this.parallaxX = this.parallaxTargetX;
+    this.parallaxY = this.parallaxTargetY;
+    this.blender.snapTo(this.targetProfile());
     this.palette = computePalette({
       elevation: this.elevation,
       rising: this.snapshot.sunRising,
       weather: this.blender.value,
       appearance: this.config.appearance,
+      season: this.config.effects.season ? this.season : null,
     });
   }
 
@@ -176,8 +241,21 @@ export class SceneManager {
       rising: this.snapshot.sunRising,
       weather,
       appearance: this.config.appearance,
+      season: this.config.effects.season ? this.season : null,
     });
     this.palette = dampPalette(this.palette, targetPalette, 0.6, dt);
+
+    // Parallax lags the input a little, which is what makes it read as depth
+    // rather than as the background being dragged around.
+    if (this.config.effects.parallax && !this.reducedMotion) {
+      this.parallaxX = damp(this.parallaxX, this.parallaxTargetX, 0.25, dt);
+      this.parallaxY = damp(this.parallaxY, this.parallaxTargetY, 0.25, dt);
+    } else {
+      this.parallaxX = 0;
+      this.parallaxY = 0;
+    }
+    state.parallaxX = this.parallaxX;
+    state.parallaxY = this.parallaxY;
 
     const { dayFactor, nightFactor, twilightFactor } = daylightFactors(this.elevation);
 
@@ -215,11 +293,17 @@ export class SceneManager {
     const effects = this.config.effects;
 
     // The sky always paints first and covers the full canvas, so no clearRect.
+    // Order is back to front: sky, celestial bodies, clouds, then the weather
+    // that happens between the clouds and the viewer.
     this.sky.render(ctx, state);
     if (effects.stars) this.stars.render(ctx, state);
     if (effects.moon) this.moon.render(ctx, state);
     if (effects.sun) this.sun.render(ctx, state);
     if (effects.clouds) this.clouds.render(ctx, state);
+    if (effects.fog) this.fog.render(ctx, state);
+    if (effects.rain) this.rain.render(ctx, state);
+    if (effects.snow) this.snow.render(ctx, state);
+    if (effects.lightning) this.lightning.render(ctx, state);
   }
 
   /** Rough particle count for the debug overlay. */

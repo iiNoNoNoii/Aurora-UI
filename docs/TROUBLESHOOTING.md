@@ -30,7 +30,7 @@ The browser never loaded the resource.
 
 ## The card is there but I see no background
 
-Check the browser console for `AURORA BACKGROUND v0.1.0-alpha`. If it is
+Check the browser console for a line reading `AURORA BACKGROUND v…`. If it is
 printed, the module loaded and something is painting over the layer.
 
 **Almost always a theme.** Aurora clears `--lovelace-background`, `html` and
@@ -153,6 +153,61 @@ reference-counted, so several cards in the *same* view fight over the config.
 
 ---
 
+## Aurora Glass does nothing / cards are not blurred
+
+The blur comes from `--ha-card-backdrop-filter`. Older Home Assistant frontends
+do not read it, so cards stay translucent but sharp. Everything else — surface
+colour, border, glow, radius — still applies.
+
+If *nothing* changes at all, another rule is winning. Check in this order:
+
+1. Is `glass.enabled` actually true? `glass: true` on its own is enough.
+2. Does your theme hard-code `card-background-color`? A theme's inline value on
+   `<html>` and Aurora's write to the same property are both inline — last write
+   wins, and Home Assistant reapplies the theme on every theme change. Reload
+   after switching themes.
+3. Are you using `card-mod` with an explicit `background:` on `ha-card`? That
+   beats the variable. Point it at `var(--aurora-card-tint)` instead.
+
+To go back to your theme, remove the `glass` block (or set `enabled: false`).
+Aurora removes every property it set.
+
+## Card text became unreadable with Glass on
+
+Turn on adaptive text:
+
+```yaml
+glass:
+  enabled: true
+  adaptive_text: true
+```
+
+or raise the surface opacity so less sky shows through:
+
+```yaml
+glass:
+  enabled: true
+  opacity: 0.7
+```
+
+## Rain / snow never shows up
+
+Aurora only draws what your weather entity reports. `effects.rain: true` is a
+permission, not a switch. Check the `weather` and `precip` lines in the debug
+overlay: `precip rain 0.00` with `weather cloudy` is correct behaviour.
+
+To see the effects on demand, set the weather entity to a template entity you
+can control, or open `examples/dev-preview.html` from a checkout.
+
+## Parallax does not move
+
+- It is disabled under `prefers-reduced-motion`.
+- The offset saturates after one viewport of scrolling, so on a short dashboard
+  there is little to see.
+- Pointer parallax only runs on devices with a fine pointer (mouse/trackpad).
+
+The debug overlay's `parallax` line shows the live offset in pixels.
+
 ## Animations are frozen
 
 Expected in three cases:
@@ -173,4 +228,4 @@ Home Assistant caches frontend resources aggressively.
 1. Hard-reload (`Ctrl`/`Cmd` + `Shift` + `R`).
 2. Companion app: **Settings → Companion App → Debugging → Reset frontend cache**.
 3. Still stale? Append a version query to the resource URL:
-   `/hacsfiles/aurora-background/aurora-background.js?v=0.1.0`
+   `/hacsfiles/aurora-background/aurora-background.js?v=0.4.0`

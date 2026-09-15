@@ -7,7 +7,7 @@ dashboards. No wallpaper JPEGs, no video loops: the sky is drawn on a canvas and
 interpolated continuously from your actual solar elevation and weather entity,
 so dawn really does fade through violet and rose into blue.
 
-[![Validate](https://github.com/OWNER/aurora-background/actions/workflows/validate.yml/badge.svg)](https://github.com/OWNER/aurora-background/actions/workflows/validate.yml)
+[![Validate](https://github.com/iinononoii/aurora-background/actions/workflows/validate.yml/badge.svg)](https://github.com/iinononoii/aurora-background/actions/workflows/validate.yml)
 [![hacs](https://img.shields.io/badge/HACS-custom-41BDF5.svg)](https://hacs.xyz)
 [![license](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 
@@ -19,17 +19,19 @@ so dawn really does fade through violet and rose into blue.
 |---|---|
 | **Continuous sky** | The palette is a function of `sun.sun` elevation, not a day/night switch. Sunrise leans pink and violet, sunset leans amber and gold. |
 | **Night** | Deep blue rather than black (OLED friendly), twinkling stars, a moon with a real phase, occasional shooting stars. |
-| **Weather aware** | Every Home Assistant `weather` condition is mapped to cloud cover, sky darkness, desaturation, haze and wind. Unknown states fall back gracefully. |
+| **Real weather** | Rain, snow, drifting fog and restrained lightning, plus two families of procedural clouds. Every Home Assistant `weather` condition is mapped; unknown states fall back gracefully. |
+| **Seasons** | A faint, hemisphere-aware seasonal cast — hazier and warmer in summer, amber in autumn, cool and pale in winter. Blended continuously, never switched. |
+| **Ambient lighting** | The live sky is published as `--aurora-*` CSS properties, and **Aurora Glass** turns your cards into translucent surfaces that drift with it. |
 | **Behind everything** | Full viewport, behind all cards, `pointer-events: none`. Scrolling and tapping the dashboard are completely unaffected. |
-| **Actually fast** | One canvas, one `requestAnimationFrame` loop, device-pixel-ratio aware, four quality tiers, automatic downscaling, pauses when the tab is hidden, respects `prefers-reduced-motion`. |
-| **Local only** | No network requests, no telemetry, no external scripts, no `eval`. ~26 kB gzipped. |
+| **Actually fast** | One canvas, one `requestAnimationFrame` loop, device-pixel-ratio aware, four quality tiers, automatic downscaling, batched particle drawing, pauses when the tab is hidden, respects `prefers-reduced-motion`. |
+| **Local only** | No network requests, no telemetry, no external scripts, no `eval`. ~33 kB gzipped. |
 
 ---
 
 ## Install via HACS
 
 1. **HACS → three-dot menu (top right) → Custom repositories**
-2. Repository: `https://github.com/OWNER/aurora-background`
+2. Repository: `https://github.com/iinononoii/aurora-background`
    Type/Category: **Dashboard** (older HACS calls this *Lovelace* or *Plugin*)
 3. **Add**, then open **Aurora Background** and click **Download**.
 4. HACS registers the dashboard resource for you. If it did not, add it manually:
@@ -42,7 +44,7 @@ so dawn really does fade through violet and rose into blue.
 <summary>Manual install without HACS</summary>
 
 1. Download `aurora-background.js` from the
-   [latest release](https://github.com/OWNER/aurora-background/releases/latest).
+   [latest release](https://github.com/iinononoii/aurora-background/releases/latest).
 2. Copy it to `<config>/www/aurora-background.js` (create `www/` if it is missing).
 3. Add the resource `/local/aurora-background.js` as **JavaScript module**.
 4. Hard-reload the browser.
@@ -84,9 +86,11 @@ More snippets: [`examples/configuration-examples.yaml`](examples/configuration-e
 
 ### `effects`
 
-`sun`, `moon`, `stars`, `shooting_stars`, `clouds` — all `true` by default.
-`rain`, `snow`, `fog`, `lightning` are accepted today and rendered from v0.2 on;
-`fog` already contributes a haze band.
+All `true` by default: `sun`, `moon`, `stars`, `shooting_stars`, `clouds`,
+`rain`, `snow`, `fog`, `lightning`, `season`, `parallax`.
+
+These are *permissions*, not switches — rain only appears when your weather
+entity actually reports rain. Set one to `false` to rule the effect out entirely.
 
 ### `appearance`
 
@@ -114,10 +118,74 @@ More snippets: [`examples/configuration-examples.yaml`](examples/configuration-e
 | `transparent_lovelace` | `true` | Makes the dashboard surface see-through so the layer is visible. |
 | `transparent_header` | `true` | Also clears the toolbar background. |
 | `z_index` | `-1` | Stacking position of the layer. |
+| `ambient_variables` | `true` | Publish the live sky as `--aurora-*` CSS properties. |
 | `css_variables` | `{}` | Force extra CSS custom properties to transparent. See [troubleshooting](docs/TROUBLESHOOTING.md). |
 
 A visual editor is included – Aurora appears in the card picker as
 **Aurora Background**.
+
+---
+
+## Aurora Glass
+
+Opt-in card styling that pulls the sky into the surfaces in front of it:
+
+```yaml
+type: custom:aurora-background
+weather_entity: weather.home
+glass: true
+```
+
+Or spelled out (these are the defaults):
+
+```yaml
+glass:
+  enabled: true
+  blur: 14 # backdrop blur in px, 0 disables
+  opacity: 0.5 # card surface opacity
+  saturate: 1.4 # backdrop saturation
+  border: true
+  glow: 1.0 # ambient glow around cards, 0–2
+  radius: 18 # corner radius in px, -1 keeps your theme's
+  adaptive_text: false # also drive --primary-text-color
+```
+
+Glass writes only Home Assistant's documented `--ha-card-*` theme variables, so
+it works with any theme and any card. Turning it off removes every property it
+set and hands the dashboard straight back to your theme.
+
+`adaptive_text` is off by default because `--primary-text-color` reaches beyond
+cards into dialogs and the sidebar — turn it on if your sky is bright and card
+text gets hard to read.
+
+> Blur relies on `--ha-card-backdrop-filter`. On a Home Assistant version that
+> does not read it, cards stay translucent but unblurred.
+
+### Using the ambient colours yourself
+
+Whether or not Glass is on, these properties are live on `<html>`:
+
+| Property | Example |
+|---|---|
+| `--aurora-ambient-color` / `--aurora-ambient-rgb` | `rgb(227,177,155)` / `227, 177, 155` |
+| `--aurora-sky-color`, `--aurora-horizon-color` | the gradient's mid and horizon bands |
+| `--aurora-accent-color` / `--aurora-accent-rgb` | the sun or moon glow |
+| `--aurora-glow-strength` | `0` – `1` |
+| `--aurora-night`, `--aurora-day` | `0` – `1` |
+| `--aurora-contrast-color` | text colour that stays readable |
+| `--aurora-card-tint`, `--aurora-card-border` | a ready-made glass surface |
+| `--aurora-season`, `--aurora-condition` | `autumn`, `partlycloudy` |
+
+Use them anywhere that accepts CSS — a theme, `card-mod`, a custom card:
+
+```yaml
+card_mod:
+  style: |
+    ha-card {
+      background: var(--aurora-card-tint);
+      box-shadow: 0 0 40px rgba(var(--aurora-accent-rgb), calc(var(--aurora-glow-strength) * 0.15));
+    }
+```
 
 ---
 
@@ -157,12 +225,15 @@ Details: [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md).
 
 ## Performance
 
-| Quality | Render scale | Max DPR | Stars | Clouds | FPS cap |
-|---|---|---|---|---|---|
-| `low` | 0.6 | 1.0 | 70 | 8 | 30 |
-| `medium` | 0.8 | 1.5 | 140 | 14 | 45 |
-| `high` | 1.0 | 2.0 | 240 | 22 | 60 |
-| `ultra` | 1.0 | 2.5 | 380 | 32 | 60 |
+| Quality | Render scale | Max DPR | Stars | Clouds | Rain | Snow | Fog | FPS cap |
+|---|---|---|---|---|---|---|---|---|
+| `low` | 0.6 | 1.0 | 70 | 8 | 100 | 50 | 2 | 30 |
+| `medium` | 0.8 | 1.5 | 140 | 14 | 220 | 110 | 3 | 45 |
+| `high` | 1.0 | 2.0 | 240 | 22 | 400 | 200 | 4 | 60 |
+| `ultra` | 1.0 | 2.5 | 380 | 32 | 650 | 320 | 5 | 60 |
+
+Rain and snow are drawn as one batched path per depth band, so 650 drops cost
+three draw calls rather than six hundred.
 
 `quality: auto` guesses from CPU cores, device memory and pointer type, then
 measures the real frame cost and steps down if the background needs more than
@@ -175,14 +246,14 @@ wallpanels from allocating a canvas nobody can afford to repaint.
 
 ## Roadmap
 
-| Version | Contents |
-|---|---|
-| **v0.1** (current) | Sky, sun, moon with phase, stars, shooting stars, clouds, quality tiers, HACS packaging |
-| v0.2 | Rain, snow, fog and lightning renderers; richer cloud shapes |
-| v0.3 | Season engine, ambient weather lighting, parallax |
-| v0.4 | Aurora Glass – glassmorphism, card glow, adaptive colours |
-| v0.5 | Aurora Cards |
-| v0.6 | Aurora Layout – genuinely different layouts for phone, tablet, desktop and wallpanel |
+| Version | Contents | |
+|---|---|---|
+| v0.1 | Sky, sun, moon with phase, stars, shooting stars, clouds, quality tiers, HACS packaging | ✅ |
+| v0.2 | Rain, snow, fog and lightning renderers; stratus/cumulus clouds | ✅ |
+| v0.3 | Season engine, ambient weather lighting, parallax | ✅ |
+| **v0.4** (current) | Aurora Glass – glassmorphism, card glow, adaptive colours | ✅ |
+| v0.5 | Aurora Cards | planned |
+| v0.6 | Aurora Layout – genuinely different layouts for phone, tablet, desktop and wallpanel | planned |
 
 ---
 

@@ -73,12 +73,15 @@ export class StarRenderer implements Renderer {
 
     const { width, height } = scene;
     const twinkleEnabled = !scene.reducedMotion;
+    // Stars are the furthest thing in the scene, so they barely move.
+    const offsetX = scene.parallaxX * 0.15;
+    const offsetY = scene.parallaxY * 0.15;
 
     ctx.save();
     for (let i = 0; i < this.stars.length; i++) {
       const star = this.stars[i];
-      const x = star.nx * width;
-      const y = star.ny * height;
+      const x = star.nx * width + offsetX;
+      const y = star.ny * height + offsetY;
 
       let alpha = star.baseAlpha * visibility;
       if (twinkleEnabled) {

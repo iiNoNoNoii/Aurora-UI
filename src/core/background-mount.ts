@@ -110,7 +110,8 @@ class BackgroundMount {
 
     if (!this.layer && this.root) {
       const owner = this.activeOwner ? this.owners.get(this.activeOwner) : undefined;
-      this.layer = new AuroraLayer(this.root, config, owner?.hass);
+      // Only the shared dashboard layer publishes the `--aurora-*` properties.
+      this.layer = new AuroraLayer(this.root, config, owner?.hass, true);
     }
   }
 

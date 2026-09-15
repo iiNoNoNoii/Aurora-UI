@@ -4,6 +4,76 @@ All notable changes to Aurora Background are documented here.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and the project uses [Semantic Versioning](https://semver.org/).
 
+## [0.4.0-alpha] – 2026-09-15
+
+Aurora Glass: the sky now styles the cards in front of it.
+
+### Added
+
+- **Aurora Glass** (`glass:`, opt-in) – translucent, sky-tinted Lovelace cards
+  driven entirely by Home Assistant's documented `--ha-card-*` theme variables:
+  surface colour, backdrop blur and saturation, border, ambient glow in the box
+  shadow, and corner radius. The card surface tracks the ambient sky colour and
+  gains opacity when the sky is bright, so contrast holds at noon and at
+  midnight. Disabling it removes every property again and hands the dashboard
+  back to the user's own theme untouched.
+- `glass: true` as shorthand for "on, with the defaults".
+- Optional `glass.adaptive_text` drives `--primary-text-color` /
+  `--secondary-text-color`. Off by default, because those reach beyond cards.
+
+### Changed
+
+- `rgbToCss()` rounds alpha to three decimals, keeping float noise out of the
+  CSS handed to the browser.
+
+## [0.3.0-alpha] – 2026-09-15
+
+### Added
+
+- **Season engine** – a continuous, hemisphere-aware seasonal cast. The four
+  seasons are blended with cosine lobes around their solstice and equinox
+  centres, so 20 March looks like 21 March. Summer is warmer and hazier, autumn
+  carries amber, winter is cooler and paler, spring is fresh and clear. The
+  effect is deliberately faint and fades out at night, when nothing lights the
+  sky seasonally. Seasonal haze feeds the fog renderer through the normal
+  weather cross-fade.
+- **Ambient weather lighting** – the live sky is published as `--aurora-*` CSS
+  custom properties on `<html>`: ambient/sky/horizon/accent colours (as both
+  `rgb()` and bare `r, g, b` lists), glow strength, day and night factors, a
+  readable contrast colour, a ready-made card tint and border, plus the current
+  season and weather condition as strings. Throttled and change-gated, because
+  writing custom properties on the root element restyles the whole document.
+- **Parallax** – scene layers drift with dashboard scrolling and pointer
+  movement, near layers further than far ones. Scroll is observed in the
+  capture phase, which catches whichever container the current Home Assistant
+  view scrolls, and saturates after one viewport. Disabled under
+  `prefers-reduced-motion`.
+- New effect toggles `season` and `parallax`, and `background.ambient_variables`.
+- The debug overlay now reports precipitation values, season and warmth, and
+  the live parallax offset.
+
+## [0.2.0-alpha] – 2026-09-15
+
+### Added
+
+- **Rain renderer** – depth-banded streaks with wind-driven slant, batched into
+  one stroke per band, plus ground spray during heavy rain.
+- **Snow renderer** – flakes varying in size, fall speed and sway width, with a
+  wind push; one batched fill per size band.
+- **Fog renderer** – drifting, horizontally seamless haze bands at several
+  heights and speeds, over a flat wash. Takes over the temporary haze band that
+  the cloud renderer carried in v0.1.
+- **Lightning renderer** – a strike is two to four short flashes with a fast
+  attack and slow decay, capped well below full white, and about half of them
+  carry a midpoint-displacement bolt with branches. Silent under
+  `prefers-reduced-motion`.
+- **Better clouds** – two families are now generated: flat stratus sheets for
+  the distant layers and puffy cumulus heaps for the near ones, with a wider
+  internal shading range so tinted clouds show volume. An overcast sheet
+  underneath closes the bright gap that used to remain near the horizon.
+- Quality profiles gained `rainParticles`, `snowParticles`, `fogLayers` and
+  `lightningBolts`.
+
 ## [0.1.0-alpha] – 2026-09-15
 
 First working release. Everything in this list is implemented and rendering.
@@ -49,4 +119,14 @@ First working release. Everything in this list is implemented and rendering.
 - A theme that paints the dashboard surface through a variable other than
   `--lovelace-background` needs `background.css_variables`.
 
-[0.1.0-alpha]: https://github.com/OWNER/aurora-background/releases/tag/v0.1.0-alpha
+## Still open
+
+- **Aurora Cards** (v0.5) and **Aurora Layout** (v0.6) are separate modules and
+  are not started yet.
+- Aurora Glass depends on `--ha-card-backdrop-filter`. On a Home Assistant
+  version that does not read it, cards stay translucent but unblurred.
+
+[0.4.0-alpha]: https://github.com/iinononoii/aurora-background/releases/tag/v0.4.0-alpha
+[0.3.0-alpha]: https://github.com/iinononoii/aurora-background/releases/tag/v0.3.0-alpha
+[0.2.0-alpha]: https://github.com/iinononoii/aurora-background/releases/tag/v0.2.0-alpha
+[0.1.0-alpha]: https://github.com/iinononoii/aurora-background/releases/tag/v0.1.0-alpha

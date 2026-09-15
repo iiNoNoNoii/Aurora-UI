@@ -34,16 +34,22 @@
         grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
         gap: 16px;
       }
+      /*
+       * Mirrors Home Assistant's real `ha-card` styling, so Aurora Glass is
+       * exercised through exactly the variables it targets in production.
+       */
       .ha-card {
-        background: rgba(28, 32, 42, 0.55);
-        backdrop-filter: blur(14px);
-        -webkit-backdrop-filter: blur(14px);
-        border: 1px solid rgba(255, 255, 255, 0.12);
-        border-radius: 16px;
+        background: var(--ha-card-background, var(--card-background-color, rgba(28, 32, 42, 0.55)));
+        backdrop-filter: var(--ha-card-backdrop-filter, none);
+        -webkit-backdrop-filter: var(--ha-card-backdrop-filter, none);
+        border-style: solid;
+        border-width: var(--ha-card-border-width, 1px);
+        border-color: var(--ha-card-border-color, rgba(255, 255, 255, 0.12));
+        border-radius: var(--ha-card-border-radius, 12px);
+        box-shadow: var(--ha-card-box-shadow, 0 8px 30px rgba(0, 0, 0, 0.25));
+        color: var(--primary-text-color, #eef3fb);
         padding: 16px;
-        color: #eef3fb;
         font: 14px/1.5 system-ui, sans-serif;
-        box-shadow: 0 8px 30px rgba(0, 0, 0, 0.25);
       }
       button {
         margin-top: 10px;
@@ -71,6 +77,10 @@
 
       const view = document.getElementById('view');
 
+      const params = new URLSearchParams(location.search);
+      const elevation = Number(params.get('elevation') ?? 6);
+      const condition = params.get('condition') ?? 'partlycloudy';
+
       // The background card, exactly as Lovelace would create it.
       const card = document.createElement('aurora-background');
       card.setConfig({
@@ -79,12 +89,10 @@
         weather_entity: 'weather.demo',
         sun_entity: 'sun.sun',
         quality: 'high',
-        debug: true,
+        debug: !params.has('nodebug'),
+        glass: params.has('glass'),
       });
       view.appendChild(card);
-
-      const elevation = Number(new URLSearchParams(location.search).get('elevation') ?? 6);
-      const condition = new URLSearchParams(location.search).get('condition') ?? 'partlycloudy';
 
       card.hass = {
         config: { latitude: 51.2, longitude: 6.8, time_zone: 'Europe/Berlin', unit_system: {} },

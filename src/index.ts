@@ -34,7 +34,7 @@ if (!registry.some((card) => card.type === CARD_TYPE)) {
     description:
       'Procedural, weather- and sun-aware animated background for the whole dashboard. Part of Aurora UI.',
     preview: false,
-    documentationURL: 'https://github.com/aurora-ui/aurora-background',
+    documentationURL: 'https://github.com/iinononoii/aurora-background',
   });
 }
 

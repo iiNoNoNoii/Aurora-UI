@@ -55,11 +55,14 @@ export interface EffectsConfig {
   stars: boolean;
   shooting_stars: boolean;
   clouds: boolean;
-  /** Reserved for v0.2 – accepted in YAML today, rendered later. */
   rain: boolean;
   snow: boolean;
   fog: boolean;
   lightning: boolean;
+  /** Subtle seasonal colour cast and haze. */
+  season: boolean;
+  /** Depth offset driven by dashboard scrolling and pointer movement. */
+  parallax: boolean;
 }
 
 export interface AppearanceConfig {
@@ -95,6 +98,33 @@ export interface BackgroundLayerConfig {
   css_variables: Record<string, string>;
   /** z-index of the fixed layer. Negative keeps it behind all dashboard content. */
   z_index: number;
+  /**
+   * Publish the live sky colours as `--aurora-*` CSS custom properties so
+   * themes and cards can tint themselves with the weather. This is the hook
+   * Aurora Glass builds on.
+   */
+  ambient_variables: boolean;
+}
+
+/** Aurora Glass – translucent, sky-tinted Lovelace cards. Opt-in. */
+export interface GlassConfig {
+  enabled: boolean;
+  /** Backdrop blur in px behind each card. 0 disables the blur. */
+  blur: number;
+  /** Card surface opacity, 0..1. */
+  opacity: number;
+  /** Backdrop saturation, 1 = unchanged. */
+  saturate: number;
+  border: boolean;
+  /** Ambient glow around cards, 0..2. */
+  glow: number;
+  /** Card corner radius in px; negative leaves the theme's value alone. */
+  radius: number;
+  /**
+   * Also drive `--primary-text-color` / `--secondary-text-color`. Off by
+   * default because those reach beyond cards into dialogs and the sidebar.
+   */
+  adaptive_text: boolean;
 }
 
 export interface AuroraBackgroundConfig {
@@ -110,6 +140,7 @@ export interface AuroraBackgroundConfig {
   appearance: AppearanceConfig;
   performance: PerformanceConfig;
   background: BackgroundLayerConfig;
+  glass: GlassConfig;
 }
 
 /** What a user may write in YAML – everything optional / partial. */
@@ -125,6 +156,7 @@ export type AuroraBackgroundConfigInput = {
   appearance?: Partial<AppearanceConfig>;
   performance?: Partial<PerformanceConfig>;
   background?: Partial<BackgroundLayerConfig>;
+  glass?: Partial<GlassConfig> | boolean;
 };
 
 /** Resolved, quality-dependent budgets handed to the renderers. */
@@ -141,6 +173,14 @@ export interface QualityProfile {
   /** Extra soft glow passes around the sun. */
   sunGlowPasses: number;
   shootingStars: boolean;
+  /** Upper bound for rain drops at `rain: 1`. */
+  rainParticles: number;
+  /** Upper bound for snow flakes at `snow: 1`. */
+  snowParticles: number;
+  /** Drifting haze bands. */
+  fogLayers: number;
+  /** Draw an actual bolt, not just the sky flash. */
+  lightningBolts: boolean;
   maxFps: number;
 }
 
@@ -192,6 +232,23 @@ export interface WeatherProfile {
   wind: number;
   /** Whether the condition implies the sun should be hidden. */
   sunVisibility: number;
+}
+
+/* ------------------------------------------------------------------ *
+ * Season
+ * ------------------------------------------------------------------ */
+
+export type SeasonName = 'spring' | 'summer' | 'autumn' | 'winter';
+
+export interface SeasonProfile {
+  name: SeasonName;
+  /** −1 at midwinter, +1 at midsummer (hemisphere-aware). */
+  warmth: number;
+  tint: RGB;
+  /** Extra horizon haze contributed by the season. */
+  haze: number;
+  /** Multiplier on colour saturation. */
+  saturation: number;
 }
 
 /* ------------------------------------------------------------------ *
@@ -253,6 +310,14 @@ export interface SceneState {
 
   palette: SkyPalette;
   weather: WeatherProfile;
+  season: SeasonProfile;
+
+  /**
+   * Parallax offset in CSS pixels, already smoothed. Renderers multiply this
+   * by their own depth factor; positive Y means the scene shifts up.
+   */
+  parallaxX: number;
+  parallaxY: number;
 
   quality: QualityProfile;
   appearance: AppearanceConfig;

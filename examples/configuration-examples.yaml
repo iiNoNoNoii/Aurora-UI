@@ -32,17 +32,20 @@
   quality: auto # auto | low | medium | high | ultra
   debug: false
 
+  # These are permissions, not switches: rain only shows up when the weather
+  # entity actually reports rain. Set one to false to rule it out entirely.
   effects:
     sun: true
     moon: true
     stars: true
     shooting_stars: true
     clouds: true
-    # Accepted today, rendered from v0.2 on:
     rain: true
     snow: true
     fog: true
     lightning: true
+    season: true # subtle seasonal colour cast and haze
+    parallax: true # layers drift with scrolling and pointer movement
 
   appearance:
     intensity: 1.0 # 0..2 – particle and cloud density
@@ -57,10 +60,21 @@
     auto_quality: true # scale back if frames get expensive
     pause_when_hidden: true # stop rendering when the tab is in the background
 
+  glass:
+    enabled: false # opt-in: restyles every card on the dashboard
+    blur: 14 # backdrop blur in px, 0 disables
+    opacity: 0.5 # card surface opacity
+    saturate: 1.4 # backdrop saturation
+    border: true
+    glow: 1.0 # ambient glow around cards, 0..2
+    radius: 18 # corner radius in px, -1 keeps your theme's
+    adaptive_text: false # also drive --primary-text-color
+
   background:
     transparent_lovelace: true # make the dashboard surface see-through
     transparent_header: true # also clear the toolbar background
     z_index: -1 # keep the layer behind every card
+    ambient_variables: true # publish --aurora-* colours for themes and cards
     css_variables: {} # escape hatch, see below
 
 # ---------------------------------------------------------------------------
@@ -94,3 +108,27 @@
   height: 260px
   weather_entity: weather.home
   quality: high
+
+# ---------------------------------------------------------------------------
+# 8. Aurora Glass: the full look, in three lines.
+# ---------------------------------------------------------------------------
+- type: custom:aurora-background
+  weather_entity: weather.home
+  glass: true
+
+# ---------------------------------------------------------------------------
+# 9. Calm sky, strong glass. Good over a busy dashboard.
+# ---------------------------------------------------------------------------
+- type: custom:aurora-background
+  weather_entity: weather.home
+  appearance:
+    intensity: 0.6
+    brightness: 0.85
+  effects:
+    shooting_stars: false
+    lightning: false
+  glass:
+    enabled: true
+    opacity: 0.62
+    blur: 20
+    glow: 0.5

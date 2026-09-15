@@ -3,11 +3,18 @@ import { detectQuality, getQualityProfile } from './config';
 import { AnimationEngine } from './animation-engine';
 import { PerformanceManager } from './performance-manager';
 import { SceneManager } from './scene-manager';
+import { AmbientVariables } from './ambient-variables';
+import { GlassStyles } from './glass-styles';
 import { DebugOverlay } from '../ui/debug-overlay';
 import { readEnvironment } from '../weather/weather-engine';
+import { clamp } from './math';
 
 /** Hard ceiling on backing-store pixels, so 4K wallpanels stay smooth. */
 const MAX_BACKING_PIXELS = 4_200_000;
+
+/** How far the scene may drift, as a fraction of the viewport's short side. */
+const PARALLAX_SCROLL_RANGE = 0.06;
+const PARALLAX_POINTER_RANGE = 0.012;
 
 /**
  * One animated canvas inside a host element.
@@ -22,6 +29,8 @@ export class AuroraLayer {
   private readonly performance: PerformanceManager;
   private scene: SceneManager;
   private debugOverlay: DebugOverlay | null = null;
+  private readonly ambient: AmbientVariables | null;
+  private readonly glass: GlassStyles | null;
 
   private config: AuroraBackgroundConfig;
   private hass: HomeAssistant | undefined;
@@ -41,13 +50,25 @@ export class AuroraLayer {
   /** Wall-clock timer that refreshes the computed sun position without HA. */
   private environmentTimer: number | null = null;
 
+  /** Latest raw parallax inputs, in normalised units. */
+  private scrollOffset = 0;
+  private pointerX = 0;
+  private pointerY = 0;
+
+  /**
+   * `exportsAmbient` is true only for the shared dashboard layer – two layers
+   * writing `--aurora-*` on the document would fight each other.
+   */
   constructor(
     private readonly host: HTMLElement,
     config: AuroraBackgroundConfig,
-    hass: HomeAssistant | undefined
+    hass: HomeAssistant | undefined,
+    exportsAmbient = false
   ) {
     this.config = config;
     this.hass = hass;
+    this.ambient = exportsAmbient ? new AmbientVariables() : null;
+    this.glass = exportsAmbient ? new GlassStyles() : null;
 
     this.canvas = document.createElement('canvas');
     this.canvas.className = 'aurora-canvas';
@@ -120,6 +141,10 @@ export class AuroraLayer {
       }
     }
 
+    if (this.ambient && !config.background.ambient_variables) this.ambient.clear();
+    if (this.glass && !config.glass.enabled) this.glass.clear();
+
+    this.pushParallax();
     this.refreshEnvironment();
     this.updateRunState();
   }
@@ -140,6 +165,8 @@ export class AuroraLayer {
     this.debugOverlay?.destroy();
     this.debugOverlay = null;
 
+    this.ambient?.clear();
+    this.glass?.clear();
     this.scene.destroy();
     this.canvas.remove();
   }
@@ -194,6 +221,20 @@ export class AuroraLayer {
 
     document.addEventListener('visibilitychange', this.onVisibilityChange);
 
+    // Home Assistant scrolls an inner element, not the window, and `scroll`
+    // does not bubble – but it can be observed in the capture phase, which
+    // catches whichever container the current view happens to use.
+    document.addEventListener('scroll', this.onDocumentScroll, {
+      capture: true,
+      passive: true,
+    });
+
+    // Pointer parallax only makes sense with a real pointer; on touch there is
+    // no hover and the listener would never fire anyway.
+    if (typeof window.matchMedia !== 'function' || window.matchMedia('(pointer: fine)').matches) {
+      window.addEventListener('pointermove', this.onPointerMove, { passive: true });
+    }
+
     if (typeof window.matchMedia === 'function') {
       this.motionQuery = window.matchMedia('(prefers-reduced-motion: reduce)');
       this.scene.setReducedMotion(this.motionQuery.matches);
@@ -219,6 +260,8 @@ export class AuroraLayer {
     this.intersectionObserver = null;
 
     document.removeEventListener('visibilitychange', this.onVisibilityChange);
+    document.removeEventListener('scroll', this.onDocumentScroll, { capture: true });
+    window.removeEventListener('pointermove', this.onPointerMove);
 
     if (this.motionQuery) {
       if (typeof this.motionQuery.removeEventListener === 'function') {
@@ -239,6 +282,37 @@ export class AuroraLayer {
     this.scene.setReducedMotion(event.matches);
     this.applyFrameCap();
   };
+
+  private readonly onDocumentScroll = (event: Event): void => {
+    const target = event.target;
+    const top =
+      target instanceof Element
+        ? target.scrollTop
+        : (document.scrollingElement?.scrollTop ?? window.scrollY);
+    // Saturating: past one viewport of scrolling the sky has drifted as far as
+    // it is going to, so a long dashboard does not push it off screen.
+    this.scrollOffset = Math.min(1, top / Math.max(1, this.cssHeight));
+    this.pushParallax();
+  };
+
+  private readonly onPointerMove = (event: PointerEvent): void => {
+    this.pointerX = clamp((event.clientX / Math.max(1, window.innerWidth)) * 2 - 1, -1, 1);
+    this.pointerY = clamp((event.clientY / Math.max(1, window.innerHeight)) * 2 - 1, -1, 1);
+    this.pushParallax();
+  };
+
+  private pushParallax(): void {
+    if (!this.config.effects.parallax) {
+      this.scene.setParallaxTarget(0, 0);
+      return;
+    }
+    const shortSide = Math.max(1, Math.min(this.cssWidth, this.cssHeight));
+    this.scene.setParallaxTarget(
+      this.pointerX * shortSide * PARALLAX_POINTER_RANGE,
+      this.scrollOffset * shortSide * PARALLAX_SCROLL_RANGE +
+        this.pointerY * shortSide * PARALLAX_POINTER_RANGE * 0.6
+    );
+  }
 
   private readonly onVisibilityChange = (): void => {
     this.documentVisible = document.visibilityState !== 'hidden';
@@ -342,6 +416,11 @@ export class AuroraLayer {
     const nextQuality = this.performance.sample(dt, cost);
     if (nextQuality) this.applyQuality(nextQuality);
 
+    if (this.ambient && this.config.background.ambient_variables) {
+      this.ambient.update(this.scene.sceneState);
+    }
+    this.glass?.update(this.scene.sceneState, this.config.glass);
+
     if (this.debugOverlay) {
       this.debugOverlay.update(
         this.scene.sceneState,
@@ -367,6 +446,11 @@ export class AuroraLayer {
     this.scene.update(0, this.scene.sceneState.time);
     this.scene.render(this.ctx);
     this.firstFrame = false;
+
+    if (this.ambient && this.config.background.ambient_variables) {
+      this.ambient.update(this.scene.sceneState, true);
+    }
+    this.glass?.update(this.scene.sceneState, this.config.glass, true);
 
     this.debugOverlay?.update(
       this.scene.sceneState,

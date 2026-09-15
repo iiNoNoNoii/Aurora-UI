@@ -17,7 +17,10 @@ export function rgbToCss(c: RGB, alpha = 1): string {
   const r = Math.round(clamp(c[0], 0, 255));
   const g = Math.round(clamp(c[1], 0, 255));
   const b = Math.round(clamp(c[2], 0, 255));
-  return alpha >= 1 ? `rgb(${r},${g},${b})` : `rgba(${r},${g},${b},${clamp(alpha, 0, 1)})`;
+  if (alpha >= 1) return `rgb(${r},${g},${b})`;
+  // Three decimals is well past what a display can show, and it keeps float
+  // noise like 0.09497599999999999 out of the CSS we hand to the browser.
+  return `rgba(${r},${g},${b},${clamp(alpha, 0, 1).toFixed(3)})`;
 }
 
 export function mixRgb(a: RGB, b: RGB, t: number): RGB {

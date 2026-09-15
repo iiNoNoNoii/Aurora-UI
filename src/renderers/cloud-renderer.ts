@@ -3,9 +3,27 @@ import { colorDistanceSq, rgbToCss } from '../core/color';
 import { clamp01, createRandom, lerp, randomBetween, wrap } from '../core/math';
 
 const CLOUD_SEED = 0xc10d5;
-const SPRITE_VARIANTS = 5;
 /** Re-tint when the cloud colour drifted by more than ~6 per channel. */
 const RETINT_THRESHOLD = 6 * 6 * 3;
+
+/** Puffy heaps for the near layers, flat sheets for the far ones. */
+type CloudStyle = 'cumulus' | 'stratus';
+
+const STYLES: { style: CloudStyle; aspect: number; heightScale: number }[] = [
+  { style: 'cumulus', aspect: 1.82, heightScale: 1 },
+  { style: 'cumulus', aspect: 1.82, heightScale: 1 },
+  { style: 'cumulus', aspect: 1.82, heightScale: 1 },
+  { style: 'stratus', aspect: 3.55, heightScale: 0.6 },
+  { style: 'stratus', aspect: 3.55, heightScale: 0.6 },
+  { style: 'stratus', aspect: 3.55, heightScale: 0.6 },
+];
+const MAX_ASPECT = 3.55;
+
+interface CloudSprite {
+  canvas: HTMLCanvasElement;
+  aspect: number;
+  heightScale: number;
+}
 
 interface Cloud {
   variant: number;
@@ -25,31 +43,36 @@ interface Cloud {
 /**
  * Procedural clouds.
  *
- * A handful of grayscale sprites are generated once, tinted whenever the sky
- * colour changes noticeably, and then only ever `drawImage`d – which keeps the
- * per-frame cost flat no matter how detailed the sprites are.
+ * Grayscale sprites are generated once, tinted whenever the sky colour changes
+ * noticeably, and then only ever `drawImage`d – which keeps the per-frame cost
+ * flat no matter how detailed the sprites are.
+ *
+ * Two families are generated: flat stratus sheets, used for the distant layers
+ * where clouds compress toward the horizon, and puffy cumulus heaps for the
+ * near ones.
  */
 export class CloudRenderer implements Renderer {
   readonly name = 'clouds';
 
-  private base: HTMLCanvasElement[] = [];
-  private tinted: HTMLCanvasElement[] = [];
+  private base: CloudSprite[] = [];
+  private tinted: CloudSprite[] = [];
   private tintColor: RGB = [0, 0, 0];
   private tintValid = false;
   private clouds: Cloud[] = [];
-  private spriteWidth = 0;
-  private spriteHeight = 0;
 
   setup(scene: SceneState): void {
     const { cloudSpriteSize, cloudCount, cloudLayers } = scene.quality;
-    this.spriteWidth = cloudSpriteSize;
-    this.spriteHeight = Math.round(cloudSpriteSize * 0.55);
-
     const rng = createRandom(CLOUD_SEED);
-    this.base = [];
-    for (let i = 0; i < SPRITE_VARIANTS; i++) {
-      this.base.push(createCloudSprite(this.spriteWidth, this.spriteHeight, rng));
-    }
+
+    this.base = STYLES.map(({ style, aspect, heightScale }) => {
+      const height = Math.round(cloudSpriteSize * 0.55);
+      const width = Math.round(height * aspect);
+      return {
+        canvas: createCloudSprite(width, height, rng, style),
+        aspect,
+        heightScale,
+      };
+    });
     this.tinted = [];
     this.tintValid = false;
 
@@ -57,8 +80,10 @@ export class CloudRenderer implements Renderer {
     for (let i = 0; i < cloudCount; i++) {
       const layer = i % cloudLayers;
       const depth = cloudLayers <= 1 ? 1 : layer / (cloudLayers - 1); // 0 far .. 1 near
+      // Far layers get sheets, near layers get heaps.
+      const family = depth < 0.45 ? 3 : 0;
       this.clouds[i] = {
-        variant: Math.floor(rng() * SPRITE_VARIANTS),
+        variant: family + Math.floor(rng() * 3),
         nx: rng(),
         ny: randomBetween(rng, -0.04, 0.46) - depth * 0.06,
         scale: randomBetween(rng, 0.82, 1.22),
@@ -94,8 +119,7 @@ export class CloudRenderer implements Renderer {
     // size: the same scene has to read correctly in a 220 px card and on a
     // 2160 px wallpanel, and an ultrawide must not end up with tiny specks.
     const reference = Math.max(height, width * 0.42);
-    const aspect = this.spriteWidth / this.spriteHeight;
-    const maxCloudWidth = reference * 0.42 * aspect * 1.22;
+    const maxCloudWidth = reference * 0.42 * MAX_ASPECT * 1.22;
     const wrapSpan = width + maxCloudWidth * 2.2;
 
     // How many clouds are on stage right now – the tail fades in gradually so a
@@ -106,6 +130,20 @@ export class CloudRenderer implements Renderer {
 
     const windSpeed = lerp(0.25, 2.6, clamp01(scene.weather.wind));
     const motion = scene.reducedMotion ? 0.08 : 1;
+
+    // Individual sprites cluster in the upper sky, which leaves an overcast day
+    // looking bright along the horizon. A flat sheet underneath them closes
+    // that gap, and the sprites still supply the texture on top of it.
+    const overcast =
+      clamp01((coverage - 0.55) / 0.45) * lerp(0.35, 0.85, clamp01(scene.weather.cloudDarkness));
+    if (overcast > 0.01) {
+      const sheet = ctx.createLinearGradient(0, 0, 0, height);
+      sheet.addColorStop(0, rgbToCss(scene.palette.cloud, overcast * 0.55));
+      sheet.addColorStop(0.55, rgbToCss(scene.palette.cloud, overcast * 0.4));
+      sheet.addColorStop(1, rgbToCss(scene.palette.cloud, overcast * 0.18));
+      ctx.fillStyle = sheet;
+      ctx.fillRect(0, 0, width, height);
+    }
 
     ctx.save();
     for (let i = 0; i < this.clouds.length; i++) {
@@ -123,13 +161,16 @@ export class CloudRenderer implements Renderer {
       if (fade <= 0.01) continue;
 
       const sprite = this.tinted[cloud.variant];
-      const h = reference * lerp(0.13, 0.42, cloud.layer) * cloud.scale;
-      const w = h * aspect;
-      const x = cloud.nx * wrapSpan - maxCloudWidth * 1.1;
+      const h = reference * lerp(0.13, 0.42, cloud.layer) * cloud.scale * sprite.heightScale;
+      const w = h * sprite.aspect;
+      const x = cloud.nx * wrapSpan - maxCloudWidth * 1.1 + scene.parallaxX * lerp(0.3, 1, cloud.layer);
       const bob = scene.reducedMotion
         ? 0
         : Math.sin(scene.time * 0.12 + cloud.bobPhase) * cloud.bobAmount * height;
-      const y = cloud.ny * height + bob;
+      // Near layers travel further than far ones – that difference is the
+      // entire parallax effect.
+      const depthShift = lerp(0.3, 1, cloud.layer);
+      const y = cloud.ny * height + bob + scene.parallaxY * depthShift;
 
       if (x + w < 0 || x > width) continue;
 
@@ -141,36 +182,19 @@ export class CloudRenderer implements Renderer {
         lerp(1, 1.15, clamp01(scene.weather.cloudDarkness));
 
       ctx.globalAlpha = clamp01(alpha);
-      ctx.drawImage(sprite, x, y, w, h);
+      ctx.drawImage(sprite.canvas, x, y, w, h);
     }
     ctx.restore();
-
-    this.renderFogBand(ctx, scene);
-  }
-
-  /**
-   * Overcast / foggy skies get a soft haze band near the horizon. This is the
-   * hook the dedicated fog renderer will extend in v0.2.
-   */
-  private renderFogBand(ctx: CanvasRenderingContext2D, scene: SceneState): void {
-    const fog = clamp01(scene.weather.fog) * clamp01(scene.appearance.intensity);
-    if (fog <= 0.02 || !scene.effects.fog) return;
-
-    const { width, height } = scene;
-    const drift = scene.reducedMotion ? 0 : Math.sin(scene.time * 0.05) * 0.02;
-    const top = height * (0.62 + drift);
-
-    const gradient = ctx.createLinearGradient(0, top, 0, height);
-    gradient.addColorStop(0, rgbToCss(scene.palette.ambient, 0));
-    gradient.addColorStop(1, rgbToCss(scene.palette.ambient, 0.38 * fog));
-    ctx.fillStyle = gradient;
-    ctx.fillRect(0, top, width, height - top);
   }
 
   private ensureTint(color: RGB): void {
     if (this.tintValid && colorDistanceSq(color, this.tintColor) < RETINT_THRESHOLD) return;
 
-    this.tinted = this.base.map((sprite) => tintSprite(sprite, color));
+    this.tinted = this.base.map((sprite) => ({
+      canvas: tintSprite(sprite.canvas, color),
+      aspect: sprite.aspect,
+      heightScale: sprite.heightScale,
+    }));
     this.tintColor = color;
     this.tintValid = true;
   }
@@ -188,35 +212,45 @@ export class CloudRenderer implements Renderer {
  * base and feathers the edges. Grayscale (rather than white) keeps the internal
  * shading intact through the tinting step.
  */
-function createCloudSprite(width: number, height: number, rng: () => number): HTMLCanvasElement {
+function createCloudSprite(
+  width: number,
+  height: number,
+  rng: () => number,
+  style: CloudStyle
+): HTMLCanvasElement {
   const canvas = document.createElement('canvas');
   canvas.width = width;
   canvas.height = height;
   const ctx = canvas.getContext('2d');
   if (!ctx) return canvas;
 
-  const baseY = height * 0.66;
-  const puffs = 12 + Math.floor(rng() * 8);
+  const cumulus = style === 'cumulus';
+  const baseY = height * (cumulus ? 0.68 : 0.6);
+  const puffs = cumulus ? 12 + Math.floor(rng() * 8) : 22 + Math.floor(rng() * 12);
+  const rise = cumulus ? 0.5 : 0.24;
+  const minRadius = cumulus ? 0.16 : 0.1;
+  const maxRadius = cumulus ? 0.3 : 0.19;
 
   for (let i = 0; i < puffs; i++) {
-    const px = width * randomBetween(rng, 0.14, 0.86);
+    const px = width * randomBetween(rng, 0.1, 0.9);
     // Puffs cluster toward the middle and thin out at the edges.
-    const edgeFalloff = 1 - Math.abs(px / width - 0.5) * 1.5;
+    const edgeFalloff = 1 - Math.abs(px / width - 0.5) * (cumulus ? 1.5 : 1.15);
     if (edgeFalloff <= 0.05) continue;
 
-    const rise = Math.pow(rng(), 1.5);
-    const py = baseY - rise * height * 0.5;
-    const radius = height * randomBetween(rng, 0.16, 0.3) * Math.max(0.35, edgeFalloff);
+    const py = baseY - Math.pow(rng(), 1.5) * height * rise;
+    const radius =
+      height * randomBetween(rng, minRadius, maxRadius) * Math.max(0.35, edgeFalloff);
 
-    // Higher puffs catch more light.
-    const shade = Math.round(lerp(178, 255, clamp01(1 - py / height + 0.15)));
+    // Higher puffs catch more light – a wider range than a flat white blob
+    // gives the cloud visible volume once it is tinted.
+    const shade = Math.round(lerp(150, 255, clamp01(1 - py / height + 0.12)));
     const gradient = ctx.createRadialGradient(px, py, radius * 0.05, px, py, radius);
     gradient.addColorStop(0, `rgba(${shade},${shade},${shade},0.85)`);
     gradient.addColorStop(0.55, `rgba(${shade},${shade},${shade},0.38)`);
     gradient.addColorStop(1, `rgba(${shade},${shade},${shade},0)`);
     ctx.fillStyle = gradient;
     ctx.beginPath();
-    ctx.ellipse(px, py, radius * 1.35, radius, 0, 0, Math.PI * 2);
+    ctx.ellipse(px, py, radius * (cumulus ? 1.35 : 1.9), radius, 0, 0, Math.PI * 2);
     ctx.fill();
   }
 
@@ -225,7 +259,7 @@ function createCloudSprite(width: number, height: number, rng: () => number): HT
   const baseMask = ctx.createLinearGradient(0, 0, 0, height);
   baseMask.addColorStop(0, 'rgba(0,0,0,1)');
   baseMask.addColorStop(baseY / height, 'rgba(0,0,0,1)');
-  baseMask.addColorStop(Math.min(1, baseY / height + 0.16), 'rgba(0,0,0,0)');
+  baseMask.addColorStop(Math.min(1, baseY / height + 0.18), 'rgba(0,0,0,0)');
   baseMask.addColorStop(1, 'rgba(0,0,0,0)');
   ctx.fillStyle = baseMask;
   ctx.fillRect(0, 0, width, height);
@@ -233,8 +267,8 @@ function createCloudSprite(width: number, height: number, rng: () => number): HT
   // Feather left/right so clouds never show a hard sprite edge.
   const sideMask = ctx.createLinearGradient(0, 0, width, 0);
   sideMask.addColorStop(0, 'rgba(0,0,0,0)');
-  sideMask.addColorStop(0.12, 'rgba(0,0,0,1)');
-  sideMask.addColorStop(0.88, 'rgba(0,0,0,1)');
+  sideMask.addColorStop(cumulus ? 0.12 : 0.08, 'rgba(0,0,0,1)');
+  sideMask.addColorStop(cumulus ? 0.88 : 0.92, 'rgba(0,0,0,1)');
   sideMask.addColorStop(1, 'rgba(0,0,0,0)');
   ctx.fillStyle = sideMask;
   ctx.fillRect(0, 0, width, height);

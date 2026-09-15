@@ -45,8 +45,9 @@ export class SunRenderer implements Renderer {
       clamp01((scene.sunElevation + 1.5) / 4) * clamp01(scene.weather.sunVisibility);
     if (discVisibility <= 0.02) return;
 
-    const x = scene.sunX * width;
-    const y = scene.sunY * height;
+    // Effectively at infinity: the sun barely reacts to parallax.
+    const x = scene.sunX * width + scene.parallaxX * 0.12;
+    const y = scene.sunY * height + scene.parallaxY * 0.12;
     const shortSide = Math.min(width, height);
     const discRadius = Math.max(14, shortSide * 0.045);
 

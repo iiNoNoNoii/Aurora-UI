@@ -1,4 +1,4 @@
-import type { AppearanceConfig, RGB, SkyPalette, WeatherProfile } from './types';
+import type { AppearanceConfig, RGB, SeasonProfile, SkyPalette, WeatherProfile } from './types';
 import { clamp01, lerp, smoothstep } from './math';
 import { desaturate, hexToRgb, mixRgb, scaleBrightness, scaleSaturation } from './color';
 
@@ -189,16 +189,38 @@ export interface PaletteOptions {
   rising: boolean;
   weather: WeatherProfile;
   appearance: AppearanceConfig;
+  /** Omit (or pass null) to disable the seasonal cast entirely. */
+  season?: SeasonProfile | null;
 }
+
+/**
+ * How strongly the seasonal tint reaches each band. It is strongest low in the
+ * sky, where atmospheric depth actually causes the effect, and barely touches
+ * the zenith.
+ */
+const SEASON_WEIGHTS: Record<keyof SkyPalette, number> = {
+  zenith: 0.15,
+  upper: 0.3,
+  middle: 0.55,
+  lower: 0.85,
+  horizon: 1,
+  sunCore: 0.2,
+  sunGlow: 0.6,
+  ambient: 0.8,
+  cloud: 0.5,
+};
+
+/** Peak tint mix at the horizon. Kept low on purpose – this is a hint. */
+const SEASON_STRENGTH = 0.1;
 
 /**
  * Final palette handed to the renderers: elevation gradient + sunrise/sunset
  * tint + weather modifiers + the user's appearance settings.
  */
 export function computePalette(options: PaletteOptions): SkyPalette {
-  const { elevation, rising, weather, appearance } = options;
+  const { elevation, rising, weather, appearance, season } = options;
   const base = basePaletteForElevation(elevation);
-  const { twilightFactor } = daylightFactors(elevation);
+  const { twilightFactor, dayFactor } = daylightFactors(elevation);
 
   const tint = rising ? SUNRISE_TINT : SUNSET_TINT;
   const tintStrength = twilightFactor * 0.3;
@@ -221,11 +243,19 @@ export function computePalette(options: PaletteOptions): SkyPalette {
   const grey = clamp01(weather.desaturation) * 0.8;
   const dark = 1 - clamp01(weather.skyDarkness) * 0.75;
 
+  // The seasonal cast only really exists in daylight – at night the sky is lit
+  // by nothing that carries a season.
+  const seasonStrength = season ? SEASON_STRENGTH * (0.35 + 0.65 * dayFactor) : 0;
+  const seasonSaturation = season ? season.saturation : 1;
+
   for (const key of PALETTE_KEYS) {
     let c = mixRgb(base[key], tint, tintStrength * tintWeights[key]);
+    if (season && seasonStrength > 0) {
+      c = mixRgb(c, season.tint, seasonStrength * SEASON_WEIGHTS[key]);
+    }
     c = desaturate(c, grey);
     c = scaleBrightness(c, dark);
-    c = scaleSaturation(c, appearance.saturation);
+    c = scaleSaturation(c, appearance.saturation * seasonSaturation);
     c = scaleBrightness(c, appearance.brightness);
     out[key] = c;
   }
