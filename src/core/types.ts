@@ -56,6 +56,10 @@ export interface EffectsConfig {
   shooting_stars: boolean;
   /** Real named stars at their actual positions, joined into the figures. */
   constellations: boolean;
+  /** The Milky Way, on dark clear nights. */
+  milky_way: boolean;
+  /** Crepuscular rays through gaps in the cloud. */
+  sun_rays: boolean;
   clouds: boolean;
   rain: boolean;
   snow: boolean;

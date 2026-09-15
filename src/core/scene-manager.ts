@@ -20,11 +20,14 @@ import { MoonRenderer } from '../renderers/moon-renderer';
 import { SunRenderer } from '../renderers/sun-renderer';
 import { CloudRenderer } from '../renderers/cloud-renderer';
 import { ConstellationRenderer } from '../renderers/constellation-renderer';
+import { MilkyWayRenderer } from '../renderers/milkyway-renderer';
+import { SunRayRenderer } from '../renderers/sunray-renderer';
 import { clampProjectedX, projectAltAz } from './projection';
 import { FogRenderer } from '../renderers/fog-renderer';
 import { RainRenderer } from '../renderers/rain-renderer';
 import { SnowRenderer } from '../renderers/snow-renderer';
 import { LightningRenderer } from '../renderers/lightning-renderer';
+import { DitherRenderer } from '../renderers/dither-renderer';
 
 /**
  * Owns the renderer stack and turns Home Assistant state into a `SceneState`.
@@ -35,7 +38,9 @@ import { LightningRenderer } from '../renderers/lightning-renderer';
 export class SceneManager {
   private readonly sky = new SkyRenderer();
   private readonly stars = new StarRenderer();
+  private readonly milkyWay = new MilkyWayRenderer();
   private readonly constellations = new ConstellationRenderer();
+  private readonly sunRays = new SunRayRenderer();
   private readonly moon = new MoonRenderer();
   private readonly sun = new SunRenderer();
   private readonly clouds = new CloudRenderer();
@@ -43,6 +48,7 @@ export class SceneManager {
   private readonly rain = new RainRenderer();
   private readonly snow = new SnowRenderer();
   private readonly lightning = new LightningRenderer();
+  private readonly dither = new DitherRenderer();
 
   /** Painter's order, back to front. */
   private readonly renderers: Renderer[];
@@ -80,15 +86,18 @@ export class SceneManager {
 
     this.renderers = [
       this.sky,
+      this.milkyWay,
       this.stars,
       this.constellations,
       this.moon,
+      this.sunRays,
       this.sun,
       this.clouds,
       this.fog,
       this.rain,
       this.snow,
       this.lightning,
+      this.dither,
     ];
 
     this.season = computeSeason(new Date(), snapshot.latitude);
@@ -309,15 +318,23 @@ export class SceneManager {
     // Order is back to front: sky, celestial bodies, clouds, then the weather
     // that happens between the clouds and the viewer.
     this.sky.render(ctx, state);
+    // The Milky Way sits behind the individual stars.
+    if (effects.milky_way) this.milkyWay.render(ctx, state);
     if (effects.stars) this.stars.render(ctx, state);
     if (effects.constellations) this.constellations.render(ctx, state);
     if (effects.moon) this.moon.render(ctx, state);
     if (effects.sun) this.sun.render(ctx, state);
     if (effects.clouds) this.clouds.render(ctx, state);
+    // Rays are light in the air between the clouds and the viewer.
+    if (effects.sun_rays) this.sunRays.render(ctx, state);
     if (effects.fog) this.fog.render(ctx, state);
     if (effects.rain) this.rain.render(ctx, state);
     if (effects.snow) this.snow.render(ctx, state);
     if (effects.lightning) this.lightning.render(ctx, state);
+
+    // Last: dithering the composited frame removes banding from every soft
+    // gradient in the scene, not just from the sky.
+    this.dither.render(ctx, state);
   }
 
   /** Rough particle count for the debug overlay. */

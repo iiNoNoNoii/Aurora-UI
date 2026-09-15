@@ -1,12 +1,12 @@
 import type { RGB, Renderer, SceneState, SkyPalette } from '../core/types';
 import { linearToRgb, rgbToCss, rgbToLinear } from '../core/color';
-import { clamp01, createRandom } from '../core/math';
+import { clamp01 } from '../core/math';
 
 /**
  * The base gradient. Everything else is painted on top of this.
  *
- * Three things separate a sky that looks expensive from one that looks like a
- * CSS gradient, and all three live in this file:
+ * Two things separate a sky that looks expensive from one that looks like a
+ * CSS gradient:
  *
  *  1. **Interpolation in linear light.** Mixing gamma-encoded sRGB darkens the
  *     midpoint of every blend, so the band between two stops goes grey.
@@ -14,25 +14,22 @@ import { clamp01, createRandom } from '../core/math';
  *     linearly between the stops it is given, which puts a visible kink at
  *     every one of them. Sampling a cubic through the five palette colours and
  *     handing the gradient many more stops removes them.
- *  3. **Dithering.** A full-screen 8-bit gradient bands, badly, especially in
- *     the deep blues of twilight. A pixel of noise hides it completely – this
- *     is the trick every high-end gradient uses.
+ *
+ * The third — dithering away the 8-bit banding — is `DitherRenderer`, which
+ * runs last over the whole composited frame rather than only over this
+ * gradient, so every soft glow in the scene gets it too.
  */
 
 /** How many stops to hand the CanvasGradient. Cheap; only rebuilt on change. */
 const GRADIENT_STOPS = 24;
 /** Positions of the five palette colours from zenith to horizon. */
 const KNOTS = [0, 0.28, 0.55, 0.82, 1];
-const NOISE_TILE = 128;
-const NOISE_SEED = 0xd17e12;
 
 export class SkyRenderer implements Renderer {
   readonly name = 'sky';
 
   private gradient: CanvasGradient | null = null;
   private cacheKey = '';
-  private noise: CanvasPattern | null = null;
-  private noiseCanvas: HTMLCanvasElement | null = null;
 
   setup(): void {
     this.gradient = null;
@@ -73,7 +70,6 @@ export class SkyRenderer implements Renderer {
     ctx.fillStyle = vignette;
     ctx.fillRect(0, 0, width, height * 0.45);
 
-    this.renderDither(ctx, scene);
   }
 
   private buildGradient(
@@ -97,31 +93,8 @@ export class SkyRenderer implements Renderer {
     return gradient;
   }
 
-  /**
-   * One pixel of static noise over the whole sky.
-   *
-   * Drawn with the transform reset, so the tile lands on device pixels rather
-   * than being scaled up with everything else – dither only works at 1:1.
-   */
-  private renderDither(ctx: CanvasRenderingContext2D, scene: SceneState): void {
-    if (!this.noise) {
-      this.noiseCanvas = createNoiseTile(NOISE_TILE);
-      this.noise = ctx.createPattern(this.noiseCanvas, 'repeat');
-      if (!this.noise) return;
-    }
-
-    ctx.save();
-    ctx.setTransform(1, 0, 0, 1, 0, 0);
-    ctx.globalAlpha = 0.5;
-    ctx.fillStyle = this.noise;
-    ctx.fillRect(0, 0, scene.width * scene.pixelRatio, scene.height * scene.pixelRatio);
-    ctx.restore();
-  }
-
   destroy(): void {
     this.gradient = null;
-    this.noise = null;
-    this.noiseCanvas = null;
   }
 }
 
@@ -166,33 +139,4 @@ function sampleCurve(colors: RGB[], knots: number[], t: number): RGB {
   }
 
   return [out[0], out[1], out[2]];
-}
-
-/**
- * A tile of low-amplitude noise. Half the pixels lighten, half darken, by about
- * one 8-bit step – enough to dissolve a band, far too little to see as grain.
- */
-function createNoiseTile(size: number): HTMLCanvasElement {
-  const canvas = document.createElement('canvas');
-  canvas.width = size;
-  canvas.height = size;
-  const ctx = canvas.getContext('2d');
-  if (!ctx) return canvas;
-
-  const image = ctx.createImageData(size, size);
-  const data = image.data;
-  const rng = createRandom(NOISE_SEED);
-
-  for (let i = 0; i < data.length; i += 4) {
-    const up = rng() < 0.5;
-    const value = up ? 255 : 0;
-    data[i] = value;
-    data[i + 1] = value;
-    data[i + 2] = value;
-    // ~1.5/255 effective amplitude once the 0.5 global alpha is applied.
-    data[i + 3] = Math.round(rng() * 3);
-  }
-
-  ctx.putImageData(image, 0, 0);
-  return canvas;
 }

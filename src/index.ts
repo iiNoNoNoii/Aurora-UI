@@ -1,16 +1,22 @@
 import { AURORA_VERSION, CARD_NAME, CARD_TYPE } from './core/config';
 import { CLIMATE_CARD_TYPE } from './cards/aurora-climate-card';
 import { LIGHT_CARD_TYPE } from './cards/aurora-light-card';
+import { STYLE_CARD_TYPE } from './cards/aurora-style-card';
+import { LAYOUT_CARD_TYPE } from './cards/aurora-layout-card';
 
 import './aurora-background-card';
 import './cards/aurora-climate-card';
 import './cards/aurora-light-card';
+import './cards/aurora-style-card';
+import './cards/aurora-layout-card';
 import './cards/aurora-card-editors';
 
 export { AuroraBackgroundCard } from './aurora-background-card';
 export { AuroraBackgroundEditor } from './editor/aurora-background-editor';
 export { AuroraClimateCard } from './cards/aurora-climate-card';
 export { AuroraLightCard } from './cards/aurora-light-card';
+export { AuroraStyleCard } from './cards/aurora-style-card';
+export { AuroraLayoutCard } from './cards/aurora-layout-card';
 export type {
   AuroraBackgroundConfig,
   AuroraBackgroundConfigInput,
@@ -56,6 +62,20 @@ const CARDS: CustomCardEntry[] = [
     type: CLIMATE_CARD_TYPE,
     name: 'Aurora Climate',
     description: 'Thermostat with a large target temperature and a surface that warms with it.',
+    preview: false,
+    documentationURL: DOCS,
+  },
+  {
+    type: STYLE_CARD_TYPE,
+    name: 'Aurora Style',
+    description: 'Wrap any existing card in an Aurora surface: glass, frosted, tinted or outline.',
+    preview: false,
+    documentationURL: DOCS,
+  },
+  {
+    type: LAYOUT_CARD_TYPE,
+    name: 'Aurora Layout',
+    description: 'Different cards and column counts for phone, tablet, desktop and wallpanel.',
     preview: false,
     documentationURL: DOCS,
   },

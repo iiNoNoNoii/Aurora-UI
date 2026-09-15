@@ -4,6 +4,59 @@ All notable changes to Aurora UI are documented here.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and the project uses [Semantic Versioning](https://semver.org/).
 
+## [0.6.0-alpha] – 2026-09-15
+
+Aurora Layout, Aurora Style, and the sky pushed as far as a canvas goes.
+
+### Added — cards
+
+- **Aurora Style** (`custom:aurora-style`) wraps *any* card — built-in,
+  third-party, not yet written — in an Aurora surface. Five presets: `glass`,
+  `frosted`, `tinted`, `outline` and `plain`, each overridable per option. It
+  works by setting Home Assistant's own `--ha-card-*` properties on the
+  wrapper; custom properties inherit into shadow roots, so the wrapped card's
+  `ha-card` picks them up without Aurora touching the card. `plain` resets
+  them to the guaranteed-invalid value, which makes `var()` fall through to the
+  theme — that is how you exclude one card from a dashboard-wide Aurora Glass.
+- **Aurora Layout** (`custom:aurora-layout`) gives each device class its own
+  column count *and its own set of cards*, so a wallpanel can show tiles the
+  phone deliberately leaves out instead of the same ones squeezed into a
+  column. Classes are `mobile` / `tablet` / `desktop` / `wide`, and the
+  breakpoints are measured against **the card's own width**, not the viewport —
+  inside a narrow sections column on a wide screen, the layout follows the
+  space it actually has. Cards are only rebuilt when the set changes.
+- `shared/card-factory.ts`, building children through
+  `window.loadCardHelpers()` — the same route every container card in the
+  ecosystem uses — with a self-contained error card so a broken child config
+  can never blank a dashboard.
+
+### Added — sky
+
+- **The Milky Way.** Sampled as several hundred soft patches along the galactic
+  plane and projected exactly like the stars, so the band rises, arcs over and
+  sets with the rest of the sky. Brightness follows the real structure: the
+  bulge toward Sagittarius, the run through Cygnus, the thin anticentre, and
+  the Great Rift subtracting from the glow in front of the inner arm. Only
+  appears on a genuinely dark, clear, moonless night, as the real one does.
+  Galactic → equatorial conversion is built from two measured directions rather
+  than memorised identities, and checks out exactly against the known
+  coordinates of the centre, the pole and the anticentre.
+- **Crepuscular rays.** A fan of long, faint wedges from a low sun. Volumetric
+  shafts would mean radial-blurring the cloud layer every frame, which a
+  dashboard cannot afford; these are drawn directly and stacked from a few
+  widths at low alpha so their edges are soft without a blur pass. They peak
+  around half cloud cover and vanish on both a clear and a fully overcast sky,
+  because that is when there is something for light to break through.
+- `--aurora-surface-rgb`: the ambient card surface as a bare `r, g, b` list, so
+  any card can pick its own alpha. Aurora Style is built on it.
+
+### Changed
+
+- **Dithering moved to the end of the render.** It used to be part of the sky
+  gradient; every soft glow in the scene has the same 8-bit banding problem,
+  and the Milky Way's very faint radial gradients showed it as visible blocks.
+  Dithering the composited frame fixes all of them at once.
+
 ## [0.5.3-alpha] – 2026-09-15
 
 The sky gets the resolution it was missing, and a real one behind it.
@@ -281,6 +334,7 @@ First working release. Everything in this list is implemented and rendering.
 - Nothing has been exercised inside a real Home Assistant yet; every check so
   far ran against a faithful mock.
 
+[0.6.0-alpha]: https://github.com/iiNoNoNoii/Aurora-UI/releases/tag/v0.6.0-alpha
 [0.5.3-alpha]: https://github.com/iiNoNoNoii/Aurora-UI/releases/tag/v0.5.3-alpha
 [0.5.2-alpha]: https://github.com/iiNoNoNoii/Aurora-UI/releases/tag/v0.5.2-alpha
 [0.5.1-alpha]: https://github.com/iiNoNoNoii/Aurora-UI/releases/tag/v0.5.1-alpha

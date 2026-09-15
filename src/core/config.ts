@@ -199,6 +199,8 @@ export function normalizeConfig(input: AuroraBackgroundConfigInput | undefined):
       stars: bool(effects.stars, true),
       shooting_stars: bool(effects.shooting_stars, true),
       constellations: bool(effects.constellations, true),
+      milky_way: bool(effects.milky_way, true),
+      sun_rays: bool(effects.sun_rays, true),
       clouds: bool(effects.clouds, true),
       rain: bool(effects.rain, true),
       snow: bool(effects.snow, true),

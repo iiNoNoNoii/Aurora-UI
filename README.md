@@ -1,6 +1,6 @@
 # Aurora UI
 
-A modular UI suite for Home Assistant. One HACS repository, one resource, three
+A modular UI suite for Home Assistant. One HACS repository, one resource, five
 cards so far:
 
 | Card | What it is |
@@ -8,6 +8,8 @@ cards so far:
 | **Aurora Background** | A procedural, weather- and sun-aware animated sky behind the whole dashboard. No wallpaper JPEGs, no video loops — the sky is drawn on a canvas and interpolated continuously from your actual solar elevation, so dawn really does fade through violet and rose into blue. |
 | **Aurora Light** | A light tile that takes the bulb's own colour. Drag for brightness, tap to toggle, hold for more info. |
 | **Aurora Climate** | A thermostat with a large target temperature and a surface that shifts from blue to amber as it warms. |
+| **Aurora Style** | Wraps *any* card — built-in, third-party, yours — in an Aurora surface. Five presets, no theme editing. |
+| **Aurora Layout** | Different cards and column counts for phone, tablet, desktop and wallpanel. A phone is not a small desktop. |
 
 Plus **Aurora Glass**, which turns every Lovelace card into a translucent
 surface that drifts with the sky.
@@ -23,7 +25,8 @@ surface that drifts with the sky.
 | | |
 |---|---|
 | **Continuous sky** | The palette is a function of `sun.sun` elevation, not a day/night switch. Sunrise leans pink and violet, sunset leans amber and gold. |
-| **The real night sky** | About seventy named stars at their actual positions for your latitude, longitude and clock, joined into the traditional constellation figures — and they turn overhead as the night goes on. Plus a moon with a real phase and occasional shooting stars. Deep blue rather than black, OLED friendly. |
+| **The real night sky** | About seventy named stars at their actual positions for your latitude, longitude and clock, joined into the traditional constellation figures — and they turn overhead as the night goes on. The Milky Way arcs through them on dark, clear nights, with the bulge toward Sagittarius and the Great Rift where they really are. Plus a moon with a real phase and occasional shooting stars. |
+| **Light in the air** | Crepuscular rays fan out from a low sun through gaps in the cloud — strongest around half cover, gone on a clear sky and on an overcast one. |
 | **Real weather** | Rain, snow, drifting fog and restrained lightning, plus two families of procedural clouds. Every Home Assistant `weather` condition is mapped; unknown states fall back gracefully. |
 | **Seasons** | A faint, hemisphere-aware seasonal cast — hazier and warmer in summer, amber in autumn, cool and pale in winter. Blended continuously, never switched. |
 | **Ambient lighting** | The live sky is published as `--aurora-*` CSS properties, and **Aurora Glass** turns your cards into translucent surfaces that drift with it. |
@@ -92,8 +95,8 @@ More snippets: [`examples/configuration-examples.yaml`](examples/configuration-e
 ### `effects`
 
 All `true` by default: `sun`, `moon`, `stars`, `shooting_stars`,
-`constellations`, `clouds`, `rain`, `snow`, `fog`, `lightning`, `season`,
-`parallax`.
+`constellations`, `milky_way`, `sun_rays`, `clouds`, `rain`, `snow`, `fog`,
+`lightning`, `season`, `parallax`.
 
 These are *permissions*, not switches — rain only appears when your weather
 entity actually reports rain. Set one to `false` to rule the effect out entirely.
@@ -231,6 +234,78 @@ than twelve. The card's tint follows the target within the thermostat's own
 | `show_modes` | `true` | Hide the HVAC mode row. |
 | `slider` | `true` | `false` leaves only the − / + buttons. |
 
+### Aurora Style — one surface, any card
+
+```yaml
+type: custom:aurora-style
+style: glass
+card:
+  type: entities
+  entities:
+    - light.living_room
+    - sensor.temperature
+```
+
+| Preset | Look |
+|---|---|
+| `glass` | Translucent, blurred, sky-tinted. The default. |
+| `frosted` | Heavier blur, more opaque — better over a busy sky. |
+| `tinted` | Solid surface that still takes the sky's colour. |
+| `outline` | Almost no surface, just a hairline and a whisper of blur. |
+| `plain` | Hands the card straight back to your theme. |
+
+Override any preset value: `blur`, `opacity`, `saturate`, `glow`, `radius`,
+`border`.
+
+It works by setting Home Assistant's own `--ha-card-*` properties on the
+wrapper. Custom properties inherit into shadow roots, so the wrapped card's
+`ha-card` picks them up **without Aurora touching the card at all** — that is
+why it works with cards that do not exist yet.
+
+`plain` is the escape hatch: if dashboard-wide Aurora Glass is on and one card
+needs to look normal, wrap it in `style: plain`.
+
+### Aurora Layout — a phone is not a small desktop
+
+```yaml
+type: custom:aurora-layout
+gap: 12
+cards: # the default set, used by any class without its own
+  - type: custom:aurora-climate
+    entity: climate.living_room
+  - type: custom:aurora-light
+    entity: light.living_room
+layouts:
+  mobile:
+    columns: 1
+    cards: # the phone deliberately shows less
+      - type: custom:aurora-climate
+        entity: climate.living_room
+  tablet:
+    columns: 2
+  desktop:
+    columns: 3
+  wide:
+    columns: 4
+```
+
+Each class can override the **column count**, the **cards themselves**, and the
+gap. That is the point: a wallpanel can show six tiles the phone leaves out,
+rather than the same six squeezed into one column.
+
+| Class | Applies below | Default columns |
+|---|---|---|
+| `mobile` | 600 px | 1 |
+| `tablet` | 1000 px | 2 |
+| `desktop` | 1600 px | 3 |
+| `wide` | — | 4 |
+
+Change them with `breakpoints: {mobile: 700, tablet: 1100, desktop: 1800}`.
+
+Breakpoints are measured against **the card's own width**, not the viewport —
+inside a narrow sections column on a wide screen, the layout follows the space
+it actually has.
+
 ---
 
 ### Using the ambient colours yourself
@@ -246,6 +321,7 @@ Whether or not Glass is on, these properties are live on `<html>`:
 | `--aurora-night`, `--aurora-day` | `0` – `1` |
 | `--aurora-contrast-color` | text colour that stays readable |
 | `--aurora-card-tint`, `--aurora-card-border` | a ready-made glass surface |
+| `--aurora-surface-rgb` | the same surface as a bare `r, g, b` list, for your own alpha |
 | `--aurora-season`, `--aurora-condition` | `autumn`, `partlycloudy` |
 
 Use them anywhere that accepts CSS — a theme, `card-mod`, a custom card:
@@ -324,8 +400,8 @@ wallpanels from allocating a canvas nobody can afford to repaint.
 | v0.2 | Rain, snow, fog and lightning renderers; stratus/cumulus clouds | ✅ |
 | v0.3 | Season engine, ambient weather lighting, parallax | ✅ |
 | v0.4 | Aurora Glass – glassmorphism, card glow, adaptive colours | ✅ |
-| **v0.5** (current) | Aurora Cards – Light and Climate | ✅ |
-| v0.6 | Aurora Layout – genuinely different layouts for phone, tablet, desktop and wallpanel | planned |
+| v0.5 | Aurora Cards – Light and Climate | ✅ |
+| **v0.6** (current) | Aurora Layout, Aurora Style, Milky Way, sun rays | ✅ |
 
 More cards (media player, sensor overview, covers) follow the same pattern and
 land as they are needed.

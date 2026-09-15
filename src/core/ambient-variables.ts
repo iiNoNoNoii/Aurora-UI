@@ -41,6 +41,7 @@ const VARIABLES = [
   '--aurora-contrast-color',
   '--aurora-card-tint',
   '--aurora-card-border',
+  '--aurora-surface-rgb',
   '--aurora-season',
   '--aurora-condition',
 ] as const;
@@ -99,6 +100,9 @@ export class AmbientVariables {
     // still separates cards from the background.
     const tintBase = mixRgb(next.ambient, bright ? [12, 16, 24] : [235, 243, 255], 0.72);
     root.setProperty('--aurora-card-tint', rgbToCss(tintBase, bright ? 0.5 : 0.14));
+    // The same surface as a bare `r, g, b` list, so a card can pick its own
+    // alpha: `rgba(var(--aurora-surface-rgb), 0.45)`. Aurora Style needs this.
+    root.setProperty('--aurora-surface-rgb', rgbList(tintBase));
     root.setProperty(
       '--aurora-card-border',
       rgbToCss(bright ? [255, 255, 255] : [255, 255, 255], bright ? 0.28 : 0.16)

@@ -284,6 +284,48 @@
         return card;
       }
 
+      // Aurora Style wrapping one of our own cards, and Aurora Layout with a
+      // different card set per device class.
+      const wrapped = document.createElement('aurora-style');
+      wrapped.setConfig({
+        type: 'custom:aurora-style',
+        style: 'glass',
+        card: { type: 'custom:aurora-light', entity: 'light.living_room' },
+      });
+      grid.appendChild(wrapped);
+      cards.push(wrapped);
+
+      const layoutHost = document.createElement('div');
+      layoutHost.style.cssText = 'grid-column: 1 / -1; resize: horizontal; overflow: auto; min-width: 280px;';
+      const layout = document.createElement('aurora-layout');
+      layout.setConfig({
+        type: 'custom:aurora-layout',
+        gap: 12,
+        cards: [
+          { type: 'custom:aurora-light', entity: 'light.desk' },
+          { type: 'custom:aurora-light', entity: 'light.porch' },
+        ],
+        layouts: {
+          mobile: {
+            columns: 1,
+            cards: [{ type: 'custom:aurora-light', entity: 'light.living_room' }],
+          },
+          tablet: { columns: 2 },
+          desktop: {
+            columns: 3,
+            cards: [
+              { type: 'custom:aurora-light', entity: 'light.living_room' },
+              { type: 'custom:aurora-light', entity: 'light.desk' },
+              { type: 'custom:aurora-climate', entity: 'climate.bedroom' },
+            ],
+          },
+        },
+      });
+      layoutHost.appendChild(layout);
+      grid.appendChild(layoutHost);
+      cards.push(layout);
+      window.__layout = layout;
+
       add('aurora-light', { type: 'custom:aurora-light', entity: 'light.living_room' });
       add('aurora-light', { type: 'custom:aurora-light', entity: 'light.desk' });
       add('aurora-light', { type: 'custom:aurora-light', entity: 'light.porch' });

@@ -45,6 +45,9 @@
     snow: true
     fog: true
     lightning: true
+    constellations: true # real named stars, joined into the figures
+    milky_way: true # the galactic band, on dark clear nights
+    sun_rays: true # crepuscular rays through gaps in the cloud
     season: true # subtle seasonal colour cast and haze
     parallax: true # layers drift with scrolling and pointer movement
 
@@ -164,3 +167,80 @@
   name: Bedroom
   show_modes: false
   slider: false
+
+# ---------------------------------------------------------------------------
+# 14. Aurora Style – put any existing card into an Aurora surface.
+#     Presets: glass | frosted | tinted | outline | plain
+# ---------------------------------------------------------------------------
+- type: custom:aurora-style
+  style: glass
+  card:
+    type: entities
+    entities:
+      - light.living_room
+      - sensor.temperature
+
+# ---------------------------------------------------------------------------
+# 15. Aurora Style – "plain" hands one card back to your theme, which is how
+#     you exclude it from a dashboard-wide Aurora Glass.
+# ---------------------------------------------------------------------------
+- type: custom:aurora-style
+  style: plain
+  card:
+    type: map
+    entities:
+      - device_tracker.phone
+
+# ---------------------------------------------------------------------------
+# 16. Aurora Style – preset plus overrides.
+# ---------------------------------------------------------------------------
+- type: custom:aurora-style
+  style: frosted
+  blur: 30
+  opacity: 0.8
+  glow: 0.2
+  radius: 24
+  border: false
+  card:
+    type: weather-forecast
+    entity: weather.home
+
+# ---------------------------------------------------------------------------
+# 17. Aurora Layout – a phone is not a small desktop.
+#     Each class may override the columns, the cards, and the gap.
+# ---------------------------------------------------------------------------
+- type: custom:aurora-layout
+  gap: 12
+  cards: # used by any class without its own set
+    - type: custom:aurora-climate
+      entity: climate.living_room
+    - type: custom:aurora-light
+      entity: light.living_room
+  layouts:
+    mobile:
+      columns: 1
+      cards: # the phone deliberately shows less
+        - type: custom:aurora-climate
+          entity: climate.living_room
+    tablet:
+      columns: 2
+    desktop:
+      columns: 3
+    wide:
+      columns: 4
+      gap: 16
+
+# ---------------------------------------------------------------------------
+# 18. Aurora Layout – custom breakpoints, measured against the CARD's width,
+#     not the viewport.
+# ---------------------------------------------------------------------------
+- type: custom:aurora-layout
+  breakpoints:
+    mobile: 700
+    tablet: 1100
+    desktop: 1800
+  cards:
+    - type: custom:aurora-light
+      entity: light.living_room
+    - type: custom:aurora-light
+      entity: light.desk

@@ -5,6 +5,7 @@ import type { HomeAssistant } from '../core/types';
 import { editorStyles } from '../styles/styles';
 import { CLIMATE_CARD_TYPE, type AuroraClimateConfigInput } from './aurora-climate-card';
 import { LIGHT_CARD_TYPE, type AuroraLightConfigInput } from './aurora-light-card';
+import { STYLE_CARD_TYPE, type AuroraStyleConfigInput } from './aurora-style-card';
 
 /**
  * Visual editors for the Aurora cards.
@@ -20,6 +21,13 @@ const LABELS: Record<string, string> = {
   slider: 'Drag to adjust',
   use_light_color: 'Tint with the light colour',
   show_modes: 'Show mode buttons',
+  style: 'Surface style',
+  blur: 'Backdrop blur (px)',
+  opacity: 'Surface opacity',
+  saturate: 'Backdrop saturation',
+  glow: 'Ambient glow',
+  radius: 'Corner radius (px)',
+  border: 'Border',
 };
 
 abstract class AuroraCardEditorBase<TConfig extends { type?: string }> extends LitElement {
@@ -177,6 +185,74 @@ export class AuroraClimateEditor extends AuroraCardEditorBase<AuroraClimateConfi
   }
 }
 
+/* ------------------------------------------------------------------ *
+ * Style
+ *
+ * Only the surface options are editable here. The wrapped card keeps its own
+ * editor — nesting a full card editor inside this one is a rabbit hole, and
+ * the YAML tab handles it cleanly.
+ * ------------------------------------------------------------------ */
+
+const STYLE_SCHEMA = [
+  {
+    name: 'style',
+    selector: {
+      select: {
+        mode: 'dropdown',
+        options: [
+          { value: 'glass', label: 'Glass — translucent, blurred' },
+          { value: 'frosted', label: 'Frosted — heavier blur, more opaque' },
+          { value: 'tinted', label: 'Tinted — solid, sky-coloured' },
+          { value: 'outline', label: 'Outline — almost invisible surface' },
+          { value: 'plain', label: 'Plain — hand back to the theme' },
+        ],
+      },
+    },
+  },
+  {
+    name: '',
+    type: 'grid',
+    schema: [
+      { name: 'blur', selector: { number: { min: 0, max: 60, step: 1, mode: 'slider' } } },
+      { name: 'opacity', selector: { number: { min: 0, max: 1, step: 0.05, mode: 'slider' } } },
+      { name: 'saturate', selector: { number: { min: 1, max: 3, step: 0.05, mode: 'slider' } } },
+      { name: 'glow', selector: { number: { min: 0, max: 2, step: 0.05, mode: 'slider' } } },
+    ],
+  },
+  { name: 'radius', selector: { number: { min: -1, max: 80, step: 1, mode: 'box' } } },
+  { name: 'border', selector: { boolean: {} } },
+];
+
+export class AuroraStyleEditor extends AuroraCardEditorBase<AuroraStyleConfigInput> {
+  protected get schema(): unknown[] {
+    return STYLE_SCHEMA;
+  }
+
+  protected get cardType(): string {
+    return STYLE_CARD_TYPE;
+  }
+
+  protected get hint(): string {
+    return 'Wraps another card in an Aurora surface. Set the wrapped card itself on the YAML tab.';
+  }
+
+  protected formData(config: AuroraStyleConfigInput): Record<string, unknown> {
+    return {
+      style: config.style ?? 'glass',
+      blur: config.blur ?? 14,
+      opacity: config.opacity ?? 0.45,
+      saturate: config.saturate ?? 1.4,
+      glow: config.glow ?? 0.8,
+      radius: config.radius ?? 18,
+      border: config.border !== false,
+    };
+  }
+}
+
+if (!customElements.get('aurora-style-editor')) {
+  customElements.define('aurora-style-editor', AuroraStyleEditor);
+}
+
 if (!customElements.get('aurora-light-editor')) {
   customElements.define('aurora-light-editor', AuroraLightEditor);
 }
@@ -188,5 +264,6 @@ declare global {
   interface HTMLElementTagNameMap {
     'aurora-light-editor': AuroraLightEditor;
     'aurora-climate-editor': AuroraClimateEditor;
+    'aurora-style-editor': AuroraStyleEditor;
   }
 }
