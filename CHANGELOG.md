@@ -4,6 +4,42 @@ All notable changes to Aurora UI are documented here.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and the project uses [Semantic Versioning](https://semver.org/).
 
+## [0.6.6-alpha] – 2026-09-16
+
+From a screen recording: cards still switched to the wrong colour on
+navigation after 0.6.5, and the initial double flicker on a fresh dashboard
+load hadn't gone away, even though switching between already-loaded views no
+longer showed it.
+
+### Fixed
+
+- **Aurora Glass now remembers every view it has ever had to correct, not
+  just one.** The fast-detection window added in 0.6.5 only ran once, for six
+  seconds after the layer was first built — a *second* themed view, switched
+  to later in the session, fell back to the slow two-second poll, and
+  switching *back* to an already-corrected view lost that correction entirely,
+  since only a single view was ever tracked. Aurora now keeps a small map of
+  every view element it has found shadowing it, keeps all of them in sync on
+  every update — not only the currently visible one — and re-verifies
+  **immediately** (not on the next poll tick) the moment the active view
+  changes. Verified end to end: a first-time switch to a themed view is
+  corrected within one animation frame instead of up to two seconds, and
+  switching away and back shows the correct colour with no wait at all, since
+  the view was kept in sync the whole time it was hidden.
+- A related gap in `verify()`: if a view Aurora had *already* corrected got its
+  theme reapplied later (a mismatch on an already-tracked host), the check
+  detected it but then did nothing, because it only forced a rewrite for
+  *newly* found hosts. It now forces the correction through either way.
+- **The initial double flicker gets more headroom.** The debounced teardown
+  added in 0.6.5 waited 800 ms for a reconnect before actually tearing down;
+  a cold dashboard load has far more main-thread contention than a later
+  in-app view switch — the frontend still initialising, other cards' own
+  resources still parsing, a WebSocket still connecting — so the same class of
+  Home-Assistant-internal re-render pass can take noticeably longer to
+  reconnect there. Raised to 2.5 s. The cost of waiting longer before a
+  genuine, permanent removal is a canvas quietly animating unseen for a
+  couple of extra seconds — negligible next to the flicker it prevents.
+
 ## [0.6.5-alpha] – 2026-09-16
 
 Three problems from watching a real dashboard load and navigate: the sky
@@ -526,6 +562,7 @@ First working release. Everything in this list is implemented and rendering.
 - Nothing has been exercised inside a real Home Assistant yet; every check so
   far ran against a faithful mock.
 
+[0.6.6-alpha]: https://github.com/iiNoNoNoii/Aurora-UI/releases/tag/v0.6.6-alpha
 [0.6.5-alpha]: https://github.com/iiNoNoNoii/Aurora-UI/releases/tag/v0.6.5-alpha
 [0.6.4-alpha]: https://github.com/iiNoNoNoii/Aurora-UI/releases/tag/v0.6.4-alpha
 [0.6.3-alpha]: https://github.com/iiNoNoNoii/Aurora-UI/releases/tag/v0.6.3-alpha

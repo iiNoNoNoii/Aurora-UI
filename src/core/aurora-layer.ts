@@ -21,13 +21,14 @@ const PARALLAX_POINTER_RANGE = 0.012;
  * Aurora Glass detects a view theme shadowing it reactively, by comparing what
  * it wrote against what a card actually resolves — see `GlassStyles.verify()`.
  * Home Assistant frequently (re-)applies a view theme during the first few
- * seconds after a dashboard loads or a view is switched to. Polling that check
- * every two seconds, from the very start, left a window of up to two full
- * seconds where the cards showed the theme's own colour before Aurora caught
- * up and corrected itself — visible as the cards briefly being "a different,
- * darker colour" on every navigation. Polling fast for a short settling
- * window shrinks that gap to well under a perceptible flicker; the slow
- * cadence afterwards is just an ongoing safety net.
+ * seconds after a dashboard loads, and again whenever a view is switched to.
+ * Polling that check every two seconds throughout left a window of up to two
+ * full seconds where the cards showed the theme's own colour before Aurora
+ * caught up and corrected itself — visible as the cards briefly being "a
+ * different, darker colour" on every navigation, not only the first one.
+ * Polling fast for a short settling window after each such moment (see
+ * `restartGlassVerification`) shrinks that gap to well under a perceptible
+ * flicker; the slow cadence in between is just an ongoing safety net.
  */
 const GLASS_VERIFY_SETTLE_MS = 6_000;
 const GLASS_VERIFY_FAST_MS = 120;
@@ -68,6 +69,8 @@ export class AuroraLayer {
   private environmentTimer: number | null = null;
   /** Checks that Aurora Glass is still winning against the page's themes. */
   private verifyTimer: number | null = null;
+  /** Wall-clock time until which glass verification polls at the fast cadence. */
+  private glassVerifySettleUntil = 0;
 
   /** Glass options with any entity-driven preset already applied. */
   private resolvedGlass: GlassConfig | null = null;
@@ -181,10 +184,23 @@ export class AuroraLayer {
 
   /**
    * An element inside the Lovelace view, used to detect a view-level theme
-   * winning over Aurora Glass. The card passes itself.
+   * winning over Aurora Glass. The card passes itself, and this is called
+   * again on every view switch with that view's own card.
+   *
+   * A changed probe means a different view just became active, which may have
+   * a theme Aurora has not seen before (or may need to reassert an escalation
+   * from a view it saw earlier but has since fallen off the fast-polling
+   * window). Checking immediately, rather than waiting for however much of
+   * the poll interval happens to be left, is what keeps a view switch itself
+   * from being the moment cards sit in the wrong colour.
    */
   setGlassProbe(element: HTMLElement | null): void {
-    this.glass?.setProbe(element);
+    if (!this.glass?.setProbe(element)) return;
+    this.restartGlassVerification();
+    if (this.glass.verify()) {
+      this.glassDirty = true;
+      if (!this.engine.isRunning) this.renderOnce();
+    }
   }
 
   updateHass(hass: HomeAssistant | undefined): void {
@@ -288,13 +304,29 @@ export class AuroraLayer {
     // `sun.sun` only updates every ~30 s, and without the sun integration we
     // compute the position ourselves – refresh once a minute either way.
     this.environmentTimer = window.setInterval(this.refreshEnvironment, 60_000);
-    this.startGlassVerification();
+    this.restartGlassVerification();
   }
 
-  /** Fast at first, then falls back to a cheap cadence – see GLASS_VERIFY_*. */
-  private startGlassVerification(): void {
+  /**
+   * (Re-)opens the fast polling window – see GLASS_VERIFY_*. Called once when
+   * the layer is built, and again on every view switch (from `setGlassProbe`),
+   * since a newly active view deserves the same fast attention a fresh page
+   * load gets: it may have a theme Aurora has not dealt with yet.
+   *
+   * Discards whatever wait is currently pending — including a slow-cadence
+   * one with up to `GLASS_VERIFY_SLOW_MS` left on it — and starts a fresh fast
+   * chain immediately. `setGlassProbe` already checks synchronously the
+   * moment a switch happens, which covers a theme that was already applied;
+   * this covers one that lands moments later, which a stale pending wait
+   * would otherwise have delayed by however long it had left.
+   */
+  private restartGlassVerification(): void {
     if (!this.glass) return;
-    const startedAt = performance.now();
+    this.glassVerifySettleUntil = performance.now() + GLASS_VERIFY_SETTLE_MS;
+    if (this.verifyTimer !== null) {
+      window.clearTimeout(this.verifyTimer);
+      this.verifyTimer = null;
+    }
 
     const tick = (): void => {
       if (this.destroyed) return;
@@ -306,7 +338,7 @@ export class AuroraLayer {
         this.glassDirty = true;
         if (!this.engine.isRunning) this.renderOnce();
       }
-      const settling = performance.now() - startedAt < GLASS_VERIFY_SETTLE_MS;
+      const settling = performance.now() < this.glassVerifySettleUntil;
       this.verifyTimer = window.setTimeout(
         tick,
         settling ? GLASS_VERIFY_FAST_MS : GLASS_VERIFY_SLOW_MS

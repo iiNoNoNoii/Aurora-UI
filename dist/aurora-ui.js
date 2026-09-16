@@ -1,5 +1,5 @@
-/*! Aurora UI v0.6.5-alpha | AGPL-3.0-or-later | Source: https://github.com/iiNoNoNoii/Aurora-UI */
-const P = Math.PI * 2;
+/*! Aurora UI v0.6.6-alpha | AGPL-3.0-or-later | Source: https://github.com/iiNoNoNoii/Aurora-UI */
+const k = Math.PI * 2;
 function x(i, t, e) {
   return i < t ? t : i > e ? e : i;
 }
@@ -22,7 +22,7 @@ function Qt(i, t, e, s) {
   const n = 1 - Math.pow(2, -s / e);
   return i + (t - i) * n;
 }
-function V(i) {
+function W(i) {
   let t = i >>> 0;
   return function() {
     t = t + 1831565813 >>> 0;
@@ -33,7 +33,7 @@ function V(i) {
 function y(i, t, e) {
   return t + i() * (e - t);
 }
-function H(i, t) {
+function G(i, t) {
   const e = i % t;
   return e < 0 ? e + t : e;
 }
@@ -81,7 +81,7 @@ function dt(i) {
   const t = i.trim().toLowerCase().replace(/ä/g, "ae").replace(/ö/g, "oe").replace(/ü/g, "ue").replace(/ß/g, "ss");
   return Zs[t] ?? null;
 }
-const pt = "aurora-background", Js = "Aurora Background", Pe = "0.6.5-alpha", ue = ["low", "medium", "high", "ultra"], ti = ["background", "card"], ei = {
+const pt = "aurora-background", Js = "Aurora Background", Pe = "0.6.6-alpha", ue = ["low", "medium", "high", "ultra"], ti = ["background", "card"], ei = {
   low: {
     level: "low",
     renderScale: 0.6,
@@ -543,13 +543,13 @@ ct.elementStyles = [], ct.shadowRootOptions = { mode: "open" }, ct[Rt("elementPr
  * Copyright 2017 Google LLC
  * SPDX-License-Identifier: BSD-3-Clause
  */
-const Lt = globalThis, Be = (i) => i, ee = Lt.trustedTypes, Ve = ee ? ee.createPolicy("lit-html", { createHTML: (i) => i }) : void 0, Es = "$lit$", Q = `lit$${Math.random().toFixed(9).slice(2)}$`, Ts = "?" + Q, mi = `<${Ts}>`, rt = document, It = () => rt.createComment(""), zt = (i) => i === null || typeof i != "object" && typeof i != "function", Le = Array.isArray, gi = (i) => Le(i) || typeof i?.[Symbol.iterator] == "function", fe = `[ 	
+const Lt = globalThis, Ve = (i) => i, ee = Lt.trustedTypes, Be = ee ? ee.createPolicy("lit-html", { createHTML: (i) => i }) : void 0, Es = "$lit$", Q = `lit$${Math.random().toFixed(9).slice(2)}$`, Ts = "?" + Q, mi = `<${Ts}>`, rt = document, It = () => rt.createComment(""), zt = (i) => i === null || typeof i != "object" && typeof i != "function", Le = Array.isArray, gi = (i) => Le(i) || typeof i?.[Symbol.iterator] == "function", fe = `[ 	
 \f\r]`, xt = /<(?:(!--|\/[^a-zA-Z])|(\/?[a-zA-Z][^>\s]*)|(\/?$))/g, We = /-->/g, Ye = />/g, st = RegExp(`>|${fe}(?:([^\\s"'>=/]+)(${fe}*=${fe}*(?:[^ 	
 \f\r"'\`<>=]|("|')|))|$)`, "g"), qe = /'/g, je = /"/g, Ps = /^(?:script|style|textarea|title)$/i, yi = (i) => (t, ...e) => ({ _$litType$: i, strings: t, values: e }), T = yi(1), at = Symbol.for("lit-noChange"), M = Symbol.for("lit-nothing"), Xe = /* @__PURE__ */ new WeakMap(), nt = rt.createTreeWalker(rt, 129);
 function ks(i, t) {
   if (!Le(i) || !i.hasOwnProperty("raw"))
     throw Error("invalid template strings array");
-  return Ve !== void 0 ? Ve.createHTML(t) : t;
+  return Be !== void 0 ? Be.createHTML(t) : t;
 }
 const bi = (i, t) => {
   const e = i.length - 1, s = [];
@@ -697,8 +697,8 @@ class Ht {
   }
   _$AR(t = this._$AA.nextSibling, e) {
     for (this._$AP?.(!1, !0, e); t !== this._$AB; ) {
-      const s = Be(t).nextSibling;
-      Be(t).remove(), t = s;
+      const s = Ve(t).nextSibling;
+      Ve(t).remove(), t = s;
     }
   }
   setConnected(t) {
@@ -790,7 +790,7 @@ const xi = (i, t, e) => {
  * SPDX-License-Identifier: BSD-3-Clause
  */
 const Dt = globalThis;
-let N = class extends ct {
+let H = class extends ct {
   constructor() {
     super(...arguments), this.renderOptions = { host: this }, this._$Do = void 0;
   }
@@ -813,9 +813,9 @@ let N = class extends ct {
     return at;
   }
 };
-N._$litElement$ = !0, N.finalized = !0, Dt.litElementHydrateSupport?.({ LitElement: N });
+H._$litElement$ = !0, H.finalized = !0, Dt.litElementHydrateSupport?.({ LitElement: H });
 const $i = Dt.litElementPolyfillSupport;
-$i?.({ LitElement: N });
+$i?.({ LitElement: H });
 (Dt.litElementVersions ?? (Dt.litElementVersions = [])).push("4.2.2");
 /**
  * @license
@@ -912,7 +912,7 @@ const Os = "important", Oi = " !" + Os, J = Pi(class extends ki {
     return at;
   }
 });
-function U(i) {
+function V(i) {
   let t = i.trim().replace("#", "");
   if (t.length === 3 && (t = t[0] + t[0] + t[1] + t[1] + t[2] + t[2]), t.length !== 6)
     return [0, 0, 0];
@@ -1161,7 +1161,7 @@ function zs(i, t) {
 function B(i) {
   return !i || i.state === "unavailable" || i.state === "unknown";
 }
-function Y(i, t) {
+function q(i, t) {
   const e = i?.attributes?.[t];
   if (typeof e == "number" && Number.isFinite(e))
     return e;
@@ -1206,7 +1206,7 @@ var Ni = Object.defineProperty, Hi = Object.getOwnPropertyDescriptor, re = (i, t
     (a = i[r]) && (n = (s ? a(t, e, n) : a(n)) || n);
   return s && n && Ni(t, e, n), n;
 };
-const gt = "aurora-climate", Gi = [86, 158, 232], be = [150, 176, 200], Ui = [246, 152, 74], Bi = {
+const gt = "aurora-climate", Gi = [86, 158, 232], be = [150, 176, 200], Ui = [246, 152, 74], Vi = {
   off: "mdi:power",
   heat: "mdi:fire",
   cool: "mdi:snowflake",
@@ -1223,7 +1223,7 @@ const gt = "aurora-climate", Gi = [86, 158, 232], be = [150, 176, 200], Ui = [24
   off: "Off",
   preheating: "Preheating"
 };
-class vt extends N {
+class vt extends H {
   constructor() {
     super(...arguments), this.errorMessage = null, this.pendingTarget = null, this.drag = new Ds({
       axis: "x",
@@ -1283,22 +1283,22 @@ class vt extends N {
     return zs(this.hass, this.config?.entity);
   }
   get minTemp() {
-    return Y(this.entity, "min_temp") ?? 7;
+    return q(this.entity, "min_temp") ?? 7;
   }
   get maxTemp() {
-    return Y(this.entity, "max_temp") ?? 35;
+    return q(this.entity, "max_temp") ?? 35;
   }
   get step() {
-    return Y(this.entity, "target_temp_step") ?? 0.5;
+    return q(this.entity, "target_temp_step") ?? 0.5;
   }
   get unit() {
     return Ae(this.entity, "temperature_unit") ?? this.hass?.config?.unit_system?.temperature ?? "°C";
   }
   get currentTemp() {
-    return Y(this.entity, "current_temperature");
+    return q(this.entity, "current_temperature");
   }
   get target() {
-    return this.pendingTarget !== null ? this.pendingTarget : Y(this.entity, "temperature");
+    return this.pendingTarget !== null ? this.pendingTarget : q(this.entity, "temperature");
   }
   /** Where the target sits in the thermostat's own range, 0..1. */
   get targetFraction() {
@@ -1460,7 +1460,7 @@ class vt extends N {
                         ?disabled=${e}
                         @click=${() => this.setHvacMode(h)}
                       >
-                        <ha-icon .icon=${Bi[h] ?? "mdi:tune"}></ha-icon>
+                        <ha-icon .icon=${Vi[h] ?? "mdi:tune"}></ha-icon>
                       </button>
                     `
     )}
@@ -1670,13 +1670,13 @@ re([
   O()
 ], vt.prototype, "pendingTarget", 2);
 customElements.get(gt) || customElements.define(gt, vt);
-var Vi = Object.defineProperty, Wi = Object.getOwnPropertyDescriptor, ae = (i, t, e, s) => {
+var Bi = Object.defineProperty, Wi = Object.getOwnPropertyDescriptor, ae = (i, t, e, s) => {
   for (var n = s > 1 ? void 0 : s ? Wi(t, e) : t, r = i.length - 1, a; r >= 0; r--)
     (a = i[r]) && (n = (s ? a(t, e, n) : a(n)) || n);
-  return s && n && Vi(t, e, n), n;
+  return s && n && Bi(t, e, n), n;
 };
 const yt = "aurora-light", Ze = [255, 197, 122], Je = 1;
-class wt extends N {
+class wt extends H {
   constructor() {
     super(...arguments), this.errorMessage = null, this.pendingBrightness = null, this.drag = new Ds({
       axis: "x",
@@ -1740,7 +1740,7 @@ class wt extends N {
       return this.pendingBrightness;
     if (!this.isOn)
       return 0;
-    const t = Y(this.entity, "brightness");
+    const t = q(this.entity, "brightness");
     return t === null ? 100 : x(Math.round(t / 255 * 100), 0, 100);
   }
   /** The light's real colour, or a warm white when it has none. */
@@ -1753,15 +1753,15 @@ class wt extends N {
       if ([n, r, a].every((o) => typeof o == "number" && Number.isFinite(o)))
         return [n, r, a];
     }
-    const e = Y(this.entity, "color_temp_kelvin");
+    const e = q(this.entity, "color_temp_kelvin");
     if (e !== null)
       return Ke(e);
-    const s = Y(this.entity, "color_temp");
+    const s = q(this.entity, "color_temp");
     return s !== null && s > 0 ? Ke(1e6 / s) : Ze;
   }
   get supportsBrightness() {
     const t = Fs(this.entity, "supported_color_modes");
-    return t.length === 0 ? Y(this.entity, "brightness") !== null : !(t.length === 1 && t[0] === "onoff");
+    return t.length === 0 ? q(this.entity, "brightness") !== null : !(t.length === 1 && t[0] === "onoff");
   }
   /* ---------------------------------------------------------------- *
    * Interaction
@@ -1926,7 +1926,7 @@ let we = null;
 function Yi() {
   return we || (we = typeof window.loadCardHelpers == "function" ? window.loadCardHelpers().catch(() => null) : Promise.resolve(null)), we;
 }
-function Vt(i) {
+function Bt(i) {
   const t = document.createElement("div");
   return t.setAttribute(
     "style",
@@ -1943,7 +1943,7 @@ function Vt(i) {
 async function Hs(i, t) {
   const e = typeof i?.type == "string" ? i.type : "";
   if (!e)
-    return Vt('Aurora: a card needs a "type".');
+    return Bt('Aurora: a card needs a "type".');
   const s = await Yi();
   try {
     if (s) {
@@ -1952,9 +1952,9 @@ async function Hs(i, t) {
     }
     if (e.startsWith("custom:")) {
       const n = e.slice(7), r = document.createElement(n);
-      return typeof r.setConfig != "function" ? Vt(`Aurora: custom element "${n}" is not loaded.`) : (r.setConfig(i), t && (r.hass = t), r);
+      return typeof r.setConfig != "function" ? Bt(`Aurora: custom element "${n}" is not loaded.`) : (r.setConfig(i), t && (r.hass = t), r);
     }
-    return Vt(`Aurora: cannot create "${e}" on this Home Assistant version.`);
+    return Bt(`Aurora: cannot create "${e}" on this Home Assistant version.`);
   } catch (n) {
     const r = n instanceof Error ? n.message : String(n);
     if (s?.createErrorCardElement)
@@ -1962,7 +1962,7 @@ async function Hs(i, t) {
         return s.createErrorCardElement(r, i);
       } catch {
       }
-    return Vt(`Aurora: ${r}`);
+    return Bt(`Aurora: ${r}`);
   }
 }
 async function Gs(i) {
@@ -1979,7 +1979,7 @@ var qi = Object.defineProperty, ji = Object.getOwnPropertyDescriptor, oe = (i, t
   return s && n && qi(t, e, n), n;
 };
 const bt = "aurora-style";
-class St extends N {
+class St extends H {
   constructor() {
     super(...arguments), this.errorMessage = null, this.childConfigKey = "";
   }
@@ -2109,7 +2109,7 @@ const Nt = "aurora-layout", ts = ["mobile", "tablet", "desktop", "wide"], Wt = {
   desktop: 3,
   wide: 4
 };
-class lt extends N {
+class lt extends H {
   constructor() {
     super(...arguments), this.device = "desktop", this.childCards = [], this.errorMessage = null, this.resizeObserver = null, this.measuredWidth = 0, this.builtKey = "", this.buildToken = 0, this.onResize = () => {
       this.measure();
@@ -2346,15 +2346,15 @@ function X(i, t) {
   return {
     elevation: i,
     palette: {
-      zenith: U(t.zenith),
-      upper: U(t.upper),
-      middle: U(t.middle),
-      lower: U(t.lower),
-      horizon: U(t.horizon),
-      sunCore: U(t.sunCore),
-      sunGlow: U(t.sunGlow),
-      ambient: U(t.ambient),
-      cloud: U(t.cloud)
+      zenith: V(t.zenith),
+      upper: V(t.upper),
+      middle: V(t.middle),
+      lower: V(t.lower),
+      horizon: V(t.horizon),
+      sunCore: V(t.sunCore),
+      sunGlow: V(t.sunGlow),
+      ambient: V(t.ambient),
+      cloud: V(t.cloud)
     }
   };
 }
@@ -2537,7 +2537,7 @@ function hn(i) {
   return Math.floor((i.getTime() - t.getTime()) / 864e5);
 }
 function ns(i, t) {
-  const e = (hn(i) - 172) / 365.25 * P, s = t < 0 ? e + Math.PI : e;
+  const e = (hn(i) - 172) / 365.25 * k, s = t < 0 ? e + Math.PI : e;
   let n = 0;
   const r = { summer: 0, autumn: 0, winter: 0, spring: 0 };
   for (const f of is) {
@@ -2572,16 +2572,16 @@ function dn(i, t, e) {
   ), m = h + R(360.9856235 * (10 / 1440)), b = Math.sin(d) * Math.sin(o) + Math.cos(d) * Math.cos(o) * Math.cos(m);
   return {
     elevation: ut(f),
-    azimuth: H(ut(p) + 180, 360),
+    azimuth: G(ut(p) + 180, 360),
     rising: b > u
   };
 }
 function un(i) {
   const t = 29.530588853, e = Date.UTC(2e3, 0, 6, 18, 14) / 864e5, s = i.getTime() / 864e5 - e;
-  return H(s / t, 1);
+  return G(s / t, 1);
 }
 function pn(i, t, e) {
-  const r = (i.getHours() + i.getMinutes() / 60 + i.getSeconds() / 3600 - 12) / 24 * P - e * P, a = 70 - Math.min(55, Math.abs(t) * 0.55), o = Math.cos(r) * a, l = (Math.sin(r) + 1) / 2;
+  const r = (i.getHours() + i.getMinutes() / 60 + i.getSeconds() / 3600 - 12) / 24 * k - e * k, a = 70 - Math.min(55, Math.abs(t) * 0.55), o = Math.cos(r) * a, l = (Math.sin(r) + 1) / 2;
   return { altitude: o, azimuthFraction: l };
 }
 const fn = [
@@ -2749,7 +2749,7 @@ const yn = {
   },
   unknown: {}
 };
-function Bs(i) {
+function Vs(i) {
   return { condition: i, ...yn, ...bn[i] };
 }
 const vn = {
@@ -2801,8 +2801,8 @@ function rs(i, t, e = /* @__PURE__ */ new Date()) {
     if (w !== null) {
       const C = String(
         u.attributes.wind_speed_unit ?? i?.config?.unit_system?.wind_speed ?? "km/h"
-      ).toLowerCase(), k = w * (vn[C] ?? 1);
-      m = g(k / 70);
+      ).toLowerCase(), P = w * (vn[C] ?? 1);
+      m = g(P / 70);
     }
   } else
     d || (f = r > -6 ? "sunny" : "clear-night");
@@ -2821,7 +2821,7 @@ function rs(i, t, e = /* @__PURE__ */ new Date()) {
   };
 }
 function wn(i) {
-  const t = Bs(i.condition);
+  const t = Vs(i.condition);
   return i.cloudCoverage !== null && (t.cloudCover = S(t.cloudCover, i.cloudCoverage, 0.85), t.sunVisibility = Math.min(t.sunVisibility, 1 - i.cloudCoverage * 0.85)), i.wind !== null && (t.wind = S(t.wind, i.wind, 0.7)), t;
 }
 const Sn = [
@@ -2909,8 +2909,8 @@ function xn(i, t, e) {
     n++;
   const r = t[n], a = t[n + 1], o = a - r || 1, l = (e - r) / o, c = [0, 0, 0];
   for (let h = 0; h < 3; h++) {
-    const d = i[n][h], u = i[n + 1][h], f = i[Math.max(0, n - 1)][h], p = i[Math.min(s, n + 2)][h], m = t[Math.max(0, n - 1)], b = t[Math.min(s, n + 2)], v = (u - f) / (a - m || 1) * o, w = (p - d) / (b - r || 1) * o, C = l * l, k = C * l;
-    c[h] = (2 * k - 3 * C + 1) * d + (k - 2 * C + l) * v + (-2 * k + 3 * C) * u + (k - C) * w;
+    const d = i[n][h], u = i[n + 1][h], f = i[Math.max(0, n - 1)][h], p = i[Math.min(s, n + 2)][h], m = t[Math.max(0, n - 1)], b = t[Math.min(s, n + 2)], v = (u - f) / (a - m || 1) * o, w = (p - d) / (b - r || 1) * o, C = l * l, P = C * l;
+    c[h] = (2 * P - 3 * C + 1) * d + (P - 2 * C + l) * v + (-2 * P + 3 * C) * u + (P - C) * w;
   }
   return [c[0], c[1], c[2]];
 }
@@ -2920,7 +2920,7 @@ class An {
     this.name = "stars", this.stars = [], this.shooting = [], this.nextShootingStar = 12;
   }
   setup(t) {
-    const e = V($n), s = t.quality.starCount;
+    const e = W($n), s = t.quality.starCount;
     this.stars = new Array(s);
     for (let n = 0; n < s; n++) {
       const r = Math.pow(e(), 1.6) * 0.82;
@@ -2930,7 +2930,7 @@ class An {
         radius: y(e, 0.4, 1.5),
         baseAlpha: y(e, 0.35, 1),
         twinkleSpeed: y(e, 0.4, 2.2),
-        twinklePhase: e() * P,
+        twinklePhase: e() * k,
         tint: e()
       };
     }
@@ -2958,7 +2958,7 @@ class An {
       if (f <= 0.02)
         continue;
       const p = 255, m = 245 + Math.round(h.tint * 8), b = 225 + Math.round((1 - h.tint) * 30);
-      t.fillStyle = `rgba(${p},${m},${b},${f.toFixed(3)})`, h.radius <= 0.7 ? t.fillRect(d, u, 1, 1) : (t.beginPath(), t.arc(d, u, h.radius, 0, P), t.fill());
+      t.fillStyle = `rgba(${p},${m},${b},${f.toFixed(3)})`, h.radius <= 0.7 ? t.fillRect(d, u, 1, 1) : (t.beginPath(), t.arc(d, u, h.radius, 0, k), t.fill());
     }
     t.restore(), e.effects.shooting_stars && e.quality.shootingStars && !e.reducedMotion && this.updateShootingStars(t, e, s);
   }
@@ -3016,7 +3016,7 @@ class En {
     const c = e.moonX * e.width + e.parallaxX * 0.12, h = e.moonY * e.height + e.parallaxY * 0.12;
     t.save(), t.globalCompositeOperation = "lighter";
     const d = r * 5, u = 0.14 * s * e.appearance.ambient_glow, f = t.createRadialGradient(c, h, r * 0.6, c, h, d);
-    f.addColorStop(0, `rgba(200,220,255,${u.toFixed(3)})`), f.addColorStop(1, "rgba(200,220,255,0)"), t.fillStyle = f, t.beginPath(), t.arc(c, h, d, 0, P), t.fill(), t.globalCompositeOperation = "source-over", t.globalAlpha = s, t.drawImage(this.buffer, c - a / 2, h - a / 2), t.restore();
+    f.addColorStop(0, `rgba(200,220,255,${u.toFixed(3)})`), f.addColorStop(1, "rgba(200,220,255,0)"), t.fillStyle = f, t.beginPath(), t.arc(c, h, d, 0, k), t.fill(), t.globalCompositeOperation = "source-over", t.globalAlpha = s, t.drawImage(this.buffer, c - a / 2, h - a / 2), t.restore();
   }
   ensureBuffer(t) {
     if (this.buffer && this.bufferSize === t)
@@ -3039,7 +3039,7 @@ class En {
       a,
       s
     );
-    o.addColorStop(0, "#fffdf3"), o.addColorStop(0.75, "#eceadd"), o.addColorStop(1, "#cfd3cc"), t.fillStyle = o, t.beginPath(), t.arc(r, a, s, 0, P), t.fill(), t.fillStyle = "rgba(148,153,150,0.22)";
+    o.addColorStop(0, "#fffdf3"), o.addColorStop(0.75, "#eceadd"), o.addColorStop(1, "#cfd3cc"), t.fillStyle = o, t.beginPath(), t.arc(r, a, s, 0, k), t.fill(), t.fillStyle = "rgba(148,153,150,0.22)";
     const l = [
       [-0.28, -0.2, 0.3],
       [0.22, -0.32, 0.18],
@@ -3047,8 +3047,8 @@ class En {
       [-0.35, 0.3, 0.16]
     ];
     for (const [d, u, f] of l)
-      t.beginPath(), t.arc(r + d * s, a + u * s, f * s, 0, P), t.fill();
-    const c = (1 - Math.cos(n * P)) / 2;
+      t.beginPath(), t.arc(r + d * s, a + u * s, f * s, 0, k), t.fill();
+    const c = (1 - Math.cos(n * k)) / 2;
     if (c < 0.99) {
       const u = n < 0.5, f = Math.abs(1 - c * 2) * s;
       t.save(), t.globalCompositeOperation = "destination-out", t.fillStyle = "rgba(0,0,0,1)", t.beginPath(), t.arc(r, a, s + 1, -Math.PI / 2, Math.PI / 2, u);
@@ -3094,10 +3094,10 @@ class Tn {
     const f = e.quality.sunGlowPasses;
     for (let m = f; m >= 1; m--) {
       const b = m / f, v = u * (2.2 + b * 9), w = 0.1 * l * a.ambient_glow * (1 - b * 0.55), C = t.createRadialGradient(c, h, u * 0.4, c, h, v);
-      C.addColorStop(0, _(s.sunGlow, w)), C.addColorStop(1, _(s.sunGlow, 0)), t.fillStyle = C, t.beginPath(), t.arc(c, h, v, 0, P), t.fill();
+      C.addColorStop(0, _(s.sunGlow, w)), C.addColorStop(1, _(s.sunGlow, 0)), t.fillStyle = C, t.beginPath(), t.arc(c, h, v, 0, k), t.fill();
     }
     const p = t.createRadialGradient(c, h, 0, c, h, u);
-    p.addColorStop(0, _(s.sunCore, l)), p.addColorStop(0.7, _(s.sunCore, 0.85 * l)), p.addColorStop(1, _(s.sunGlow, 0)), t.fillStyle = p, t.beginPath(), t.arc(c, h, u, 0, P), t.fill(), t.restore();
+    p.addColorStop(0, _(s.sunCore, l)), p.addColorStop(0.7, _(s.sunCore, 0.85 * l)), p.addColorStop(1, _(s.sunGlow, 0)), t.fillStyle = p, t.beginPath(), t.arc(c, h, u, 0, k), t.fill(), t.restore();
   }
   destroy() {
   }
@@ -3115,7 +3115,7 @@ class zn {
     this.name = "clouds", this.base = [], this.tinted = [], this.tintColor = [0, 0, 0], this.tintValid = !1, this.lastTintAt = 0, this.clouds = [];
   }
   setup(t) {
-    const { cloudSpriteSize: e, cloudCount: s, cloudLayers: n } = t.quality, r = V(Pn), a = this.clouds;
+    const { cloudSpriteSize: e, cloudCount: s, cloudLayers: n } = t.quality, r = W(Pn), a = this.clouds;
     this.base = Rn.map(({ style: o, aspect: l, spanScale: c }) => {
       const h = Math.round(e), d = Math.round(h / l);
       return {
@@ -3161,16 +3161,16 @@ class zn {
       let v = n * S(Ln, Dn, m.layer) * m.scale * b.spanScale * o, w = v / b.aspect;
       const C = r * In;
       w > C && (w = C, v = w * b.aspect);
-      const k = n + v * 1.1, $ = n * S(6e-3, 0.028, m.layer) * d * u;
-      if (m.nx = H(m.nx + $ * a / k, 1), p > c)
+      const P = n + v * 1.1, $ = n * S(6e-3, 0.028, m.layer) * d * u;
+      if (m.nx = G(m.nx + $ * a / P, 1), p > c)
         continue;
-      const q = p === c ? h : 1;
-      if (q <= 0.01)
+      const z = p === c ? h : 1;
+      if (z <= 0.01)
         continue;
-      const Ut = S(0.3, 1, m.layer), ht = m.nx * k - v + e.parallaxX * Ut, ce = e.reducedMotion ? 0 : Math.sin(e.time * 0.12 + m.bobPhase) * m.bobAmount * r, et = m.ny * r + ce + e.parallaxY * Ut;
+      const Ut = S(0.3, 1, m.layer), ht = m.nx * P - v + e.parallaxX * Ut, ce = e.reducedMotion ? 0 : Math.sin(e.time * 0.12 + m.bobPhase) * m.bobAmount * r, et = m.ny * r + ce + e.parallaxY * Ut;
       if (ht + v < 0 || ht > n)
         continue;
-      const L = m.alpha * q * S(0.42, 0.92, s) * S(0.75, 1, m.layer) * S(1, 1.15, g(e.weather.cloudDarkness));
+      const L = m.alpha * z * S(0.42, 0.92, s) * S(0.75, 1, m.layer) * S(1, 1.15, g(e.weather.cloudDarkness));
       t.globalAlpha = g(L), t.drawImage(b.canvas, ht, et, v, w);
     }
     t.restore();
@@ -3221,37 +3221,37 @@ function Hn(i, t, e, s) {
     return n;
   const a = s === "cumulus", o = t * (a ? 0.055 : 0.045), l = o * 2.2, c = t - l - t * (a ? 0.04 : 0.06), h = l, d = i - l * 2;
   r.fillStyle = "#ffffff";
-  const u = a ? 9 : 14, f = d / (u * 0.85), p = Math.max(d * 0.2, d - f * 2.6), m = l + (d - p) / 2, b = p / Math.max(1, u - 1), v = (c - h) * (a ? 0.3 : 0.4), w = (L, z, G, W) => {
-    r.beginPath(), r.ellipse(L, z, G, W, 0, 0, P), r.fill();
+  const u = a ? 9 : 14, f = d / (u * 0.85), p = Math.max(d * 0.2, d - f * 2.6), m = l + (d - p) / 2, b = p / Math.max(1, u - 1), v = (c - h) * (a ? 0.3 : 0.4), w = (L, F, U, Y) => {
+    r.beginPath(), r.ellipse(L, F, U, Y, 0, 0, k), r.fill();
   };
   for (let L = 0; L < u; L++) {
-    const z = L / (u - 1), G = m + z * p + (e() - 0.5) * b * 0.5, W = 0.34 + 0.66 * Math.pow(Math.sin(Math.PI * g(z)), a ? 0.55 : 0.4), Bt = (c - h) * (a ? 1 : 0.74) * W * y(e, 0.6, 1), de = f * y(e, 0.85, 1.25), Ie = Math.min(de * y(e, 1, 1.45), Math.max(3, Bt * 0.7));
-    w(G, c - Bt + Ie, de, Ie), w(
-      G,
+    const F = L / (u - 1), U = m + F * p + (e() - 0.5) * b * 0.5, Y = 0.34 + 0.66 * Math.pow(Math.sin(Math.PI * g(F)), a ? 0.55 : 0.4), Vt = (c - h) * (a ? 1 : 0.74) * Y * y(e, 0.6, 1), de = f * y(e, 0.85, 1.25), Ie = Math.min(de * y(e, 1, 1.45), Math.max(3, Vt * 0.7));
+    w(U, c - Vt + Ie, de, Ie), w(
+      U,
       c - v * y(e, 0.1, 0.4),
       de * y(e, 0.95, 1.2),
-      v * W * y(e, 0.8, 1.2)
+      v * Y * y(e, 0.8, 1.2)
     );
   }
   const C = a ? 7 : 9;
   for (let L = 0; L < C; L++) {
-    const z = (L + y(e, 0.2, 0.8)) / C, G = m + g(z) * p, W = 0.4 + 0.6 * Math.sin(Math.PI * g(z)), j = f * y(e, 0.32, 0.6), Bt = c - (c - h) * W * y(e, 0.35, 0.85) + j * 0.4;
-    w(G, Bt, j * y(e, 1, 1.35), j);
+    const F = (L + y(e, 0.2, 0.8)) / C, U = m + g(F) * p, Y = 0.4 + 0.6 * Math.sin(Math.PI * g(F)), j = f * y(e, 0.32, 0.6), Vt = c - (c - h) * Y * y(e, 0.35, 0.85) + j * 0.4;
+    w(U, Vt, j * y(e, 1, 1.35), j);
   }
-  const k = Nn(n, o), $ = k.getContext("2d");
+  const P = Nn(n, o), $ = P.getContext("2d");
   if (!$)
-    return k;
+    return P;
   $.globalCompositeOperation = "source-atop";
-  const q = $.createLinearGradient(0, h, 0, c);
-  q.addColorStop(0, "rgb(255,255,255)"), q.addColorStop(0.42, "rgb(238,240,244)"), q.addColorStop(0.78, "rgb(196,201,211)"), q.addColorStop(1, "rgb(152,159,174)"), $.fillStyle = q, $.fillRect(0, 0, i, t);
+  const z = $.createLinearGradient(0, h, 0, c);
+  z.addColorStop(0, "rgb(255,255,255)"), z.addColorStop(0.42, "rgb(238,240,244)"), z.addColorStop(0.78, "rgb(196,201,211)"), z.addColorStop(1, "rgb(152,159,174)"), $.fillStyle = z, $.fillRect(0, 0, i, t);
   const Ut = a ? 3 : 2;
   for (let L = 0; L < Ut; L++) {
-    const z = l + d * y(e, 0.22, 0.78), G = c - (c - h) * y(e, 0.45, 0.85), W = t * y(e, 0.18, 0.32), j = $.createRadialGradient(z, G, 0, z, G, W);
-    j.addColorStop(0, "rgba(255,255,255,0.55)"), j.addColorStop(1, "rgba(255,255,255,0)"), $.fillStyle = j, $.beginPath(), $.arc(z, G, W, 0, P), $.fill();
+    const F = l + d * y(e, 0.22, 0.78), U = c - (c - h) * y(e, 0.45, 0.85), Y = t * y(e, 0.18, 0.32), j = $.createRadialGradient(F, U, 0, F, U, Y);
+    j.addColorStop(0, "rgba(255,255,255,0.55)"), j.addColorStop(1, "rgba(255,255,255,0)"), $.fillStyle = j, $.beginPath(), $.arc(F, U, Y, 0, k), $.fill();
   }
   $.globalCompositeOperation = "destination-in";
   const ht = g((c - o * 1.5) / t), ce = g((c + o * 1.2) / t), et = $.createLinearGradient(0, 0, 0, t);
-  return et.addColorStop(0, "rgba(0,0,0,1)"), et.addColorStop(ht, "rgba(0,0,0,1)"), et.addColorStop(Math.max(ce, ht + 1e-3), "rgba(0,0,0,0)"), et.addColorStop(1, "rgba(0,0,0,0)"), $.fillStyle = et, $.fillRect(0, 0, i, t), $.globalCompositeOperation = "source-over", k;
+  return et.addColorStop(0, "rgba(0,0,0,1)"), et.addColorStop(ht, "rgba(0,0,0,1)"), et.addColorStop(Math.max(ce, ht + 1e-3), "rgba(0,0,0,0)"), et.addColorStop(1, "rgba(0,0,0,0)"), $.fillStyle = et, $.fillRect(0, 0, i, t), $.globalCompositeOperation = "source-over", P;
 }
 function Gn(i, t) {
   const e = document.createElement("canvas");
@@ -3259,7 +3259,7 @@ function Gn(i, t) {
   const s = e.getContext("2d");
   return s && (s.drawImage(i, 0, 0), s.globalCompositeOperation = "multiply", s.fillStyle = _(t), s.fillRect(0, 0, e.width, e.height), s.globalCompositeOperation = "destination-in", s.drawImage(i, 0, 0), s.globalCompositeOperation = "source-over"), e;
 }
-function Vs(i, t) {
+function Bs(i, t) {
   const e = R(i), s = R(t);
   return [Math.cos(s) * Math.cos(e), Math.cos(s) * Math.sin(e), Math.sin(s)];
 }
@@ -3270,30 +3270,30 @@ function Un(i, t) {
     i[0] * t[1] - i[1] * t[0]
   ];
 }
-const Zt = Vs(266.405, -28.936), Jt = Vs(192.85948, 27.12825), _e = Un(Jt, Zt);
-function Bn(i, t) {
+const Zt = Bs(266.405, -28.936), Jt = Bs(192.85948, 27.12825), _e = Un(Jt, Zt);
+function Vn(i, t) {
   const e = R(i), s = R(t), n = Math.cos(s) * Math.cos(e), r = Math.cos(s) * Math.sin(e), a = Math.sin(s), o = n * Zt[0] + r * _e[0] + a * Jt[0], l = n * Zt[1] + r * _e[1] + a * Jt[1], c = n * Zt[2] + r * _e[2] + a * Jt[2];
   return {
-    ra: H(ut(Math.atan2(l, o)), 360) / 15,
+    ra: G(ut(Math.atan2(l, o)), 360) / 15,
     dec: ut(Math.asin(Math.max(-1, Math.min(1, c))))
   };
 }
-function Vn(i) {
+function Bn(i) {
   return i.getTime() / 864e5 + 24405875e-1;
 }
 function Wn(i) {
-  const t = Vn(i) - 2451545;
-  return H(280.46061837 + 360.98564736629 * t, 360);
+  const t = Bn(i) - 2451545;
+  return G(280.46061837 + 360.98564736629 * t, 360);
 }
 function Ws(i, t, e, s, n) {
-  const r = Wn(n) + s, a = R(H(r - i * 15, 360)), o = R(t), l = R(e), c = Math.sin(o) * Math.sin(l) + Math.cos(o) * Math.cos(l) * Math.cos(a), h = Math.asin(Math.max(-1, Math.min(1, c))), d = Math.atan2(
+  const r = Wn(n) + s, a = R(G(r - i * 15, 360)), o = R(t), l = R(e), c = Math.sin(o) * Math.sin(l) + Math.cos(o) * Math.cos(l) * Math.cos(a), h = Math.asin(Math.max(-1, Math.min(1, c))), d = Math.atan2(
     Math.sin(a),
     Math.cos(a) * Math.sin(l) - Math.tan(o) * Math.cos(l)
   );
   return {
     altitude: ut(h),
     // atan2 above measures from south, increasing westward.
-    azimuth: H(ut(d) + 180, 360)
+    azimuth: G(ut(d) + 180, 360)
   };
 }
 const Yn = 60, qn = 240;
@@ -3610,7 +3610,7 @@ class Qn {
       // brightness is logarithmic, so map it as a curve rather than linearly.
       brightness: g((6 - t.mag) / 7.5) ** 1.6,
       radius: S(0.7, 2.3, g((4.5 - t.mag) / 6)),
-      twinklePhase: e * 2.399 % P
+      twinklePhase: e * 2.399 % k
     })), this.sinceRecompute = Number.POSITIVE_INFINITY;
   }
   resize() {
@@ -3645,9 +3645,9 @@ class Qn {
       const h = o.x * n + e.parallaxX * 0.15, d = o.y * r + e.parallaxY * 0.15;
       if (o.radius > 1.5) {
         const u = t.createRadialGradient(h, d, 0, h, d, o.radius * 5);
-        u.addColorStop(0, `rgba(198,220,255,${(c * 0.55).toFixed(3)})`), u.addColorStop(1, "rgba(198,220,255,0)"), t.fillStyle = u, t.beginPath(), t.arc(h, d, o.radius * 5, 0, P), t.fill();
+        u.addColorStop(0, `rgba(198,220,255,${(c * 0.55).toFixed(3)})`), u.addColorStop(1, "rgba(198,220,255,0)"), t.fillStyle = u, t.beginPath(), t.arc(h, d, o.radius * 5, 0, k), t.fill();
       }
-      t.fillStyle = `rgba(255,252,246,${c.toFixed(3)})`, t.beginPath(), t.arc(h, d, o.radius, 0, P), t.fill();
+      t.fillStyle = `rgba(255,252,246,${c.toFixed(3)})`, t.beginPath(), t.arc(h, d, o.radius, 0, k), t.fill();
     }
     t.restore(), this.visibleCount = a;
   }
@@ -3678,7 +3678,7 @@ class Jn {
     this.name = "milkyway", this.patches = [], this.sinceRecompute = Number.POSITIVE_INFINITY, this.lastLatitude = Number.NaN, this.lastLongitude = Number.NaN, this.visibleCount = 0;
   }
   setup() {
-    const t = V(Kn);
+    const t = W(Kn);
     this.patches = new Array(Me);
     for (let e = 0; e < Me; e++) {
       const s = e / Me * 360 + y(t, -1.5, 1.5), n = Ys(s), r = S(4.5, 13, n), a = y(t, -r, r) * y(t, 0.5, 1), o = 1 - g(Math.abs(a) / (r + 2)) ** 1.4, l = tr(s), h = er(s) && Math.abs(a) < 5.5 && t() < 0.55;
@@ -3720,7 +3720,7 @@ class Jn {
         continue;
       l++;
       const d = c.x * r + e.parallaxX * 0.15, u = c.y * a + e.parallaxY * 0.15, f = c.radius * o, p = t.createRadialGradient(d, u, 0, d, u, f);
-      p.addColorStop(0, `rgba(203,214,242,${h.toFixed(4)})`), p.addColorStop(0.5, `rgba(178,192,229,${(h * 0.45).toFixed(4)})`), p.addColorStop(1, "rgba(160,176,220,0)"), t.fillStyle = p, t.beginPath(), t.arc(d, u, f, 0, P), t.fill();
+      p.addColorStop(0, `rgba(203,214,242,${h.toFixed(4)})`), p.addColorStop(0.5, `rgba(178,192,229,${(h * 0.45).toFixed(4)})`), p.addColorStop(1, "rgba(160,176,220,0)"), t.fillStyle = p, t.beginPath(), t.arc(d, u, f, 0, k), t.fill();
     }
     t.globalCompositeOperation = "destination-out";
     for (const c of this.patches) {
@@ -3730,7 +3730,7 @@ class Jn {
       if (h <= 4e-3)
         continue;
       const d = c.x * r + e.parallaxX * 0.15, u = c.y * a + e.parallaxY * 0.15, f = c.radius * o * 0.8, p = t.createRadialGradient(d, u, 0, d, u, f);
-      p.addColorStop(0, `rgba(0,0,0,${h.toFixed(4)})`), p.addColorStop(1, "rgba(0,0,0,0)"), t.fillStyle = p, t.beginPath(), t.arc(d, u, f, 0, P), t.fill();
+      p.addColorStop(0, `rgba(0,0,0,${h.toFixed(4)})`), p.addColorStop(1, "rgba(0,0,0,0)"), t.fillStyle = p, t.beginPath(), t.arc(d, u, f, 0, k), t.fill();
     }
     t.restore(), this.visibleCount = l;
   }
@@ -3738,7 +3738,7 @@ class Jn {
     this.sinceRecompute = 0, this.lastLatitude = t.latitude, this.lastLongitude = t.longitude;
     const e = /* @__PURE__ */ new Date();
     for (const s of this.patches) {
-      const { ra: n, dec: r } = Bn(s.l, s.b), { altitude: a, azimuth: o } = Ws(
+      const { ra: n, dec: r } = Vn(s.l, s.b), { altitude: a, azimuth: o } = Ws(
         n,
         r,
         t.latitude,
@@ -3753,15 +3753,15 @@ class Jn {
   }
 }
 function Ys(i) {
-  const t = Math.abs((H(i, 360) + 180) % 360 - 180);
+  const t = Math.abs((G(i, 360) + 180) % 360 - 180);
   return g(1 - t / 110);
 }
 function tr(i) {
-  const t = Ys(i), e = Math.abs((H(i - 80, 360) + 180) % 360 - 180), s = g(1 - e / 45) * 0.55;
+  const t = Ys(i), e = Math.abs((G(i - 80, 360) + 180) % 360 - 180), s = g(1 - e / 45) * 0.55;
   return g(0.22 + t * 0.85 + s);
 }
 function er(i) {
-  const t = H(i, 360);
+  const t = G(i, 360);
   return t > 10 && t < 80;
 }
 const sr = 31301, ls = 9, hs = 3;
@@ -3770,7 +3770,7 @@ class ir {
     this.name = "sunrays", this.rays = [];
   }
   setup() {
-    const t = V(sr);
+    const t = W(sr);
     this.rays = new Array(ls);
     for (let e = 0; e < ls; e++)
       this.rays[e] = {
@@ -3778,7 +3778,7 @@ class ir {
         halfWidth: y(t, 0.018, 0.075),
         strength: y(t, 0.45, 1),
         driftSpeed: y(t, 0.012, 0.04),
-        driftPhase: t() * P
+        driftPhase: t() * k
       };
   }
   resize() {
@@ -3795,8 +3795,8 @@ class ir {
     for (const p of this.rays) {
       const m = e.reducedMotion ? 0 : Math.sin(e.time * p.driftSpeed + p.driftPhase) * 0.09, b = Math.PI / 2 + p.angle + m;
       for (let v = 0; v < hs; v++) {
-        const w = (v + 1) / hs, C = p.halfWidth * S(0.45, 1.6, w), k = o * p.strength * 0.05 * (1 - w * 0.55);
-        if (k <= 2e-3)
+        const w = (v + 1) / hs, C = p.halfWidth * S(0.45, 1.6, w), P = o * p.strength * 0.05 * (1 - w * 0.55);
+        if (P <= 2e-3)
           continue;
         const $ = t.createLinearGradient(
           0,
@@ -3804,7 +3804,7 @@ class ir {
           Math.cos(b) * u,
           Math.sin(b) * u
         );
-        $.addColorStop(0, _(f, k)), $.addColorStop(0.35, _(f, k * 0.55)), $.addColorStop(1, _(f, 0)), t.fillStyle = $, t.beginPath(), t.moveTo(0, 0), t.lineTo(Math.cos(b - C) * u, Math.sin(b - C) * u), t.lineTo(Math.cos(b + C) * u, Math.sin(b + C) * u), t.closePath(), t.fill();
+        $.addColorStop(0, _(f, P)), $.addColorStop(0.35, _(f, P * 0.55)), $.addColorStop(1, _(f, 0)), t.fillStyle = $, t.beginPath(), t.moveTo(0, 0), t.lineTo(Math.cos(b - C) * u, Math.sin(b - C) * u), t.lineTo(Math.cos(b + C) * u, Math.sin(b + C) * u), t.closePath(), t.fill();
       }
     }
     t.restore();
@@ -3819,7 +3819,7 @@ class ar {
     this.name = "fog", this.base = [], this.tinted = [], this.tintColor = [0, 0, 0], this.tintValid = !1, this.bands = [];
   }
   setup(t) {
-    const e = V(nr);
+    const e = W(nr);
     this.base = [];
     for (let n = 0; n < cs; n++)
       this.base.push(or(ds, us, e));
@@ -3854,7 +3854,7 @@ class ar {
     const { width: r, height: a, dt: o } = e, l = e.reducedMotion ? 0.1 : 1;
     t.save();
     for (const d of this.bands) {
-      d.nx = H(d.nx + d.speed * l * o, 1);
+      d.nx = G(d.nx + d.speed * l * o, 1);
       const u = this.tinted[d.variant], f = d.thickness * a, p = Math.max(r * 1.6, f * (ds / us)), m = e.reducedMotion ? 0 : Math.sin(e.time * 0.07 + d.bobPhase) * a * 0.012, b = d.ny * a - f / 2 + m + e.parallaxY * 1.4, v = -d.nx * p + e.parallaxX * 1.4;
       t.globalAlpha = g(d.alpha * s * 0.55), t.drawImage(u, v, b, p, f), t.drawImage(u, v + p, b, p, f);
     }
@@ -3900,7 +3900,7 @@ class cr {
     this.name = "rain", this.drops = [], this.active = 0;
   }
   setup(t) {
-    const e = V(hr), s = t.quality.rainParticles;
+    const e = W(hr), s = t.quality.rainParticles;
     this.drops = new Array(s);
     for (let n = 0; n < s; n++) {
       const r = n % Et, a = r / (Et - 1);
@@ -3957,7 +3957,7 @@ class ur {
     this.name = "snow", this.flakes = [], this.active = 0;
   }
   setup(t) {
-    const e = V(dr), s = t.quality.snowParticles;
+    const e = W(dr), s = t.quality.snowParticles;
     this.flakes = new Array(s);
     for (let n = 0; n < s; n++) {
       const r = n % Tt, a = r / (Tt - 1);
@@ -3968,7 +3968,7 @@ class ur {
         radius: S(16e-4, 5e-3, a) * y(e, 0.8, 1.3),
         driftAmplitude: y(e, 8e-3, 0.035) * S(0.6, 1.4, a),
         driftFrequency: y(e, 0.25, 0.8),
-        driftPhase: e() * P,
+        driftPhase: e() * k,
         band: r
       };
     }
@@ -3994,7 +3994,7 @@ class ur {
         const m = this.flakes[p];
         m.ny += m.speed * c * a, m.nx += h * a, m.ny > 1.05 && (m.ny -= 1.1, m.nx = Math.random()), m.nx > 1.05 ? m.nx -= 1.1 : m.nx < -0.05 && (m.nx += 1.1);
         const b = e.reducedMotion ? 0 : Math.sin(e.time * m.driftFrequency + m.driftPhase) * m.driftAmplitude, v = (m.nx + b) * n, w = m.ny * r, C = m.radius * o;
-        t.moveTo(v + C, w), t.arc(v, w, C, 0, P);
+        t.moveTo(v + C, w), t.arc(v, w, C, 0, k);
       }
       t.fill();
     }
@@ -4006,10 +4006,10 @@ class ur {
 const ps = 45079;
 class pr {
   constructor() {
-    this.name = "lightning", this.rng = V(ps), this.strike = null, this.cooldown = 6;
+    this.name = "lightning", this.rng = W(ps), this.strike = null, this.cooldown = 6;
   }
   setup() {
-    this.rng = V(ps), this.strike = null, this.cooldown = y(this.rng, 4, 12);
+    this.rng = W(ps), this.strike = null, this.cooldown = y(this.rng, 4, 12);
   }
   resize() {
   }
@@ -4138,7 +4138,7 @@ function yr(i) {
   const e = t.getContext("2d");
   if (!e)
     return t;
-  const s = e.createImageData(i, i), n = s.data, r = V(mr);
+  const s = e.createImageData(i, i), n = s.data, r = W(mr);
   for (let a = 0; a < n.length; a += 4) {
     const o = r() < 0.5 ? 255 : 0;
     n[a] = o, n[a + 1] = o, n[a + 2] = o, n[a + 3] = Math.round(r() * 3);
@@ -4161,7 +4161,7 @@ class br {
       this.snow,
       this.lightning,
       this.dither
-    ], this.season = ns(/* @__PURE__ */ new Date(), s.latitude), this.blender = new _n(Bs(s.condition)), this.blender.snapTo(this.targetProfile()), this.elevation = s.sunElevation, this.azimuth = s.sunAzimuth, this.palette = Se({
+    ], this.season = ns(/* @__PURE__ */ new Date(), s.latitude), this.blender = new _n(Vs(s.condition)), this.blender.snapTo(this.targetProfile()), this.elevation = s.sunElevation, this.azimuth = s.sunAzimuth, this.palette = Se({
       elevation: this.elevation,
       rising: s.sunRising,
       weather: this.blender.value,
@@ -4382,10 +4382,18 @@ const Cr = 500, ms = 5 * 5 * 3, gs = [
 ], Mr = 0.96, xe = ["--primary-text-color", "--secondary-text-color"];
 class xr {
   constructor() {
-    this.lastSurface = null, this.lastAccent = null, this.lastGlow = -1, this.lastOptions = "", this.lastWrite = 0, this.active = !1, this.textActive = !1, this.writtenSurface = "", this.probe = null, this.scopeHost = null, this.scopeHostOriginal = /* @__PURE__ */ new Map(), this.warned = !1;
+    this.lastSurface = null, this.lastAccent = null, this.lastGlow = -1, this.lastOptions = "", this.lastWrite = 0, this.active = !1, this.textActive = !1, this.writtenSurface = "", this.probe = null, this.scopeHosts = /* @__PURE__ */ new Map(), this.warned = !1;
   }
+  /**
+   * Returns true when the active view actually changed (a view switch). Any
+   * escalation found so far belonged to whatever view was active *then* and
+   * may say nothing about this one — on `true`, the caller (AuroraLayer)
+   * re-verifies immediately rather than waiting for the next poll, which is
+   * exactly the wait that showed up as "briefly the wrong colour" after
+   * switching to a view Aurora had not already escalated to.
+   */
   setProbe(t) {
-    this.probe = t;
+    return t === this.probe ? !1 : (this.probe = t, !0);
   }
   setDarkModeHint(t) {
     this.darkModeHint = t;
@@ -4404,7 +4412,7 @@ class xr {
   }
   /** `document` normally; `view` once Aurora had to escalate to beat a theme. */
   get scope() {
-    return this.scopeHost ? "view" : "document";
+    return this.scopeHosts.size > 0 ? "view" : "document";
   }
   update(t, e, s = !1) {
     if (!e.enabled) {
@@ -4456,36 +4464,49 @@ class xr {
     )) : (h.setProperty("--ha-card-border-width", "0px"), h.setProperty("--ha-card-border-color", "transparent"));
     const v = `0 6px 24px rgba(0,0,0,${(r ? 0.3 : 0.18).toFixed(3)})`, w = l > 0.01 ? `, 0 0 36px ${_(o, g(l * 0.16))}` : "";
     if (h.setProperty("--ha-card-box-shadow", v + w), e.radius >= 0 ? h.setProperty("--ha-card-border-radius", `${e.radius}px`) : h.removeProperty("--ha-card-border-radius"), e.adaptive_text) {
-      const C = r ? [244, 248, 255] : [14, 19, 28], k = this.textTargets();
-      k.setProperty("--primary-text-color", _(C)), k.setProperty("--secondary-text-color", _(C, r ? 0.78 : 0.72)), this.textActive = !0;
+      const C = r ? [244, 248, 255] : [14, 19, 28], P = _(C), $ = _(C, r ? 0.78 : 0.72);
+      for (const z of this.textTargets())
+        z.setProperty("--primary-text-color", P), z.setProperty("--secondary-text-color", $);
+      this.textActive = !0;
     } else if (this.textActive) {
-      for (const C of xe)
-        this.textTargets().removeProperty(C);
+      for (const C of this.textTargets())
+        for (const P of xe)
+          C.removeProperty(P);
       this.textActive = !1;
     }
   }
   /**
    * Where the text colours go.
    *
-   * Preferably only the element Aurora escalated to — normally the Lovelace
-   * view — because `--primary-text-color` reaches beyond cards into dialogs and
-   * the sidebar, and there is no card-scoped equivalent. Scoping it to the view
-   * keeps the rest of Home Assistant on the user's own theme. Without a scope
-   * host there is nowhere narrower than the document to write.
+   * Preferably only the views Aurora escalated to — because `--primary-text-color`
+   * reaches beyond cards into dialogs and the sidebar, and there is no
+   * card-scoped equivalent. Scoping it to those views keeps the rest of Home
+   * Assistant on the user's own theme. Without any scope host there is
+   * nowhere narrower than the document to write.
    */
   textTargets() {
-    return this.scopeHost ? this.scopeHost.style : document.documentElement.style;
+    const t = this.connectedScopeHosts();
+    return t.length > 0 ? t.map((e) => e.style) : [document.documentElement.style];
+  }
+  connectedScopeHosts() {
+    const t = [];
+    for (const e of this.scopeHosts.keys())
+      e.isConnected ? t.push(e) : this.scopeHosts.delete(e);
+    return t;
   }
   /**
    * Every place the properties have to be written.
    *
-   * Normally just `<html>`. When a view theme was found shadowing us, the view
-   * element joins the list — writing to both keeps cards outside that view
-   * styled too.
+   * Normally just `<html>`. Every view a theme was found shadowing Aurora on
+   * joins the list — writing to all of them keeps cards in every such view
+   * styled, not only whichever one happens to be visible right now.
    */
   targets() {
-    const t = [document.documentElement.style];
-    return this.scopeHost && t.push(this.scopeHost.style), {
+    const t = [
+      document.documentElement.style,
+      ...this.connectedScopeHosts().map((e) => e.style)
+    ];
+    return {
       setProperty(e, s) {
         for (const n of t)
           n.setProperty(e, s);
@@ -4526,7 +4547,7 @@ class xr {
     const t = document.documentElement.style;
     if (Xt(t.getPropertyValue("--ha-card-background")) !== Xt(this.writtenSurface))
       return this.lastOptions = "", this.lastSurface = null, !0;
-    if (!this.probe)
+    if (this.connectedScopeHosts(), !this.probe)
       return !1;
     const e = Xt(
       getComputedStyle(this.probe).getPropertyValue("--ha-card-background")
@@ -4534,14 +4555,16 @@ class xr {
     if (e.length === 0 || e === Xt(this.writtenSurface))
       return !1;
     const s = kr(this.probe, "--ha-card-background");
-    if (!s || s === this.scopeHost)
+    if (!s)
       return !1;
-    this.scopeHost = s, this.scopeHostOriginal.clear();
-    for (const n of [...gs, ...xe]) {
-      const r = s.style.getPropertyValue(n);
-      r.length > 0 && this.scopeHostOriginal.set(n, r);
+    if (this.scopeHosts.has(s))
+      return this.lastOptions = "", this.lastSurface = null, !0;
+    const n = /* @__PURE__ */ new Map();
+    for (const r of [...gs, ...xe]) {
+      const a = s.style.getPropertyValue(r);
+      a.length > 0 && n.set(r, a);
     }
-    return this.lastOptions = "", this.lastSurface = null, this.warned || (this.warned = !0, console.info(
+    return this.scopeHosts.set(s, n), this.lastOptions = "", this.lastSurface = null, this.warned || (this.warned = !0, console.info(
       '[Aurora UI] A theme on this view was overriding Aurora Glass — a view theme is applied closer to the cards than the document is. Aurora is now writing to that element as well. Set glass.enabled to false, or the preset to "plain", to hand the cards back to your theme.'
     )), !0;
   }
@@ -4553,16 +4576,16 @@ class xr {
     for (const e of gs)
       t.removeProperty(e);
     if (this.textActive) {
-      for (const e of xe)
-        t.removeProperty(e);
+      for (const e of this.textTargets())
+        for (const s of xe)
+          e.removeProperty(s);
       this.textActive = !1;
     }
-    if (this.scopeHost) {
-      for (const [e, s] of this.scopeHostOriginal)
-        this.scopeHost.style.setProperty(e, s);
-      this.scopeHostOriginal.clear();
-    }
-    this.active = !1, this.lastSurface = null, this.lastAccent = null, this.lastGlow = -1, this.lastOptions = "", this.writtenSurface = "", this.scopeHost = null;
+    for (const [e, s] of this.scopeHosts)
+      if (e.isConnected)
+        for (const [n, r] of s)
+          e.style.setProperty(n, r);
+    this.scopeHosts.clear(), this.active = !1, this.lastSurface = null, this.lastAccent = null, this.lastGlow = -1, this.lastOptions = "", this.writtenSurface = "";
   }
 }
 function Xt(i) {
@@ -4617,7 +4640,7 @@ function Pr(i) {
     return null;
   const n = String(s);
   if (n.startsWith("#"))
-    return U(n);
+    return V(n);
   const r = n.match(/rgba?\(([^)]+)\)/);
   if (!r)
     return null;
@@ -4700,7 +4723,7 @@ class qs {
    * writing `--aurora-*` on the document would fight each other.
    */
   constructor(t, e, s, n = !1) {
-    this.host = t, this.debugOverlay = null, this.resizeObserver = null, this.intersectionObserver = null, this.motionQuery = null, this.cssWidth = 0, this.cssHeight = 0, this.pixelRatio = 1, this.resizePending = !1, this.visible = !0, this.documentVisible = !0, this.destroyed = !1, this.firstFrame = !0, this.environmentTimer = null, this.verifyTimer = null, this.resolvedGlass = null, this.glassDirty = !1, this.scrollOffset = 0, this.pointerX = 0, this.pointerY = 0, this.onMotionPreferenceChange = (a) => {
+    this.host = t, this.debugOverlay = null, this.resizeObserver = null, this.intersectionObserver = null, this.motionQuery = null, this.cssWidth = 0, this.cssHeight = 0, this.pixelRatio = 1, this.resizePending = !1, this.visible = !0, this.documentVisible = !0, this.destroyed = !1, this.firstFrame = !0, this.environmentTimer = null, this.verifyTimer = null, this.glassVerifySettleUntil = 0, this.resolvedGlass = null, this.glassDirty = !1, this.scrollOffset = 0, this.pointerX = 0, this.pointerY = 0, this.onMotionPreferenceChange = (a) => {
       this.scene.setReducedMotion(a.matches), this.applyFrameCap();
     }, this.onDocumentScroll = (a) => {
       const o = a.target, l = o instanceof Element ? o.scrollTop : document.scrollingElement?.scrollTop ?? window.scrollY;
@@ -4766,10 +4789,18 @@ class qs {
   }
   /**
    * An element inside the Lovelace view, used to detect a view-level theme
-   * winning over Aurora Glass. The card passes itself.
+   * winning over Aurora Glass. The card passes itself, and this is called
+   * again on every view switch with that view's own card.
+   *
+   * A changed probe means a different view just became active, which may have
+   * a theme Aurora has not seen before (or may need to reassert an escalation
+   * from a view it saw earlier but has since fallen off the fast-polling
+   * window). Checking immediately, rather than waiting for however much of
+   * the poll interval happens to be left, is what keeps a view switch itself
+   * from being the moment cards sit in the wrong colour.
    */
   setGlassProbe(t) {
-    this.glass?.setProbe(t);
+    this.glass?.setProbe(t) && (this.restartGlassVerification(), this.glass.verify() && (this.glassDirty = !0, this.engine.isRunning || this.renderOnce()));
   }
   updateHass(t) {
     this.destroyed || (this.hass = t, this.glass?.setDarkModeHint(t?.themes?.darkMode), this.refreshEnvironment());
@@ -4804,23 +4835,36 @@ class qs {
     typeof ResizeObserver < "u" ? (this.resizeObserver = new ResizeObserver(this.onResize), this.resizeObserver.observe(this.host)) : window.addEventListener("resize", this.onResize, { passive: !0 }), typeof IntersectionObserver < "u" && (this.intersectionObserver = new IntersectionObserver(this.onIntersect, { threshold: 0 }), this.intersectionObserver.observe(this.host)), document.addEventListener("visibilitychange", this.onVisibilityChange), document.addEventListener("scroll", this.onDocumentScroll, {
       capture: !0,
       passive: !0
-    }), (typeof window.matchMedia != "function" || window.matchMedia("(pointer: fine)").matches) && window.addEventListener("pointermove", this.onPointerMove, { passive: !0 }), typeof window.matchMedia == "function" && (this.motionQuery = window.matchMedia("(prefers-reduced-motion: reduce)"), this.scene.setReducedMotion(this.motionQuery.matches), typeof this.motionQuery.addEventListener == "function" ? this.motionQuery.addEventListener("change", this.onMotionPreferenceChange) : typeof this.motionQuery.addListener == "function" && this.motionQuery.addListener(this.onMotionPreferenceChange)), this.environmentTimer = window.setInterval(this.refreshEnvironment, 6e4), this.startGlassVerification();
+    }), (typeof window.matchMedia != "function" || window.matchMedia("(pointer: fine)").matches) && window.addEventListener("pointermove", this.onPointerMove, { passive: !0 }), typeof window.matchMedia == "function" && (this.motionQuery = window.matchMedia("(prefers-reduced-motion: reduce)"), this.scene.setReducedMotion(this.motionQuery.matches), typeof this.motionQuery.addEventListener == "function" ? this.motionQuery.addEventListener("change", this.onMotionPreferenceChange) : typeof this.motionQuery.addListener == "function" && this.motionQuery.addListener(this.onMotionPreferenceChange)), this.environmentTimer = window.setInterval(this.refreshEnvironment, 6e4), this.restartGlassVerification();
   }
-  /** Fast at first, then falls back to a cheap cadence – see GLASS_VERIFY_*. */
-  startGlassVerification() {
+  /**
+   * (Re-)opens the fast polling window – see GLASS_VERIFY_*. Called once when
+   * the layer is built, and again on every view switch (from `setGlassProbe`),
+   * since a newly active view deserves the same fast attention a fresh page
+   * load gets: it may have a theme Aurora has not dealt with yet.
+   *
+   * Discards whatever wait is currently pending — including a slow-cadence
+   * one with up to `GLASS_VERIFY_SLOW_MS` left on it — and starts a fresh fast
+   * chain immediately. `setGlassProbe` already checks synchronously the
+   * moment a switch happens, which covers a theme that was already applied;
+   * this covers one that lands moments later, which a stale pending wait
+   * would otherwise have delayed by however long it had left.
+   */
+  restartGlassVerification() {
     if (!this.glass)
       return;
-    const t = performance.now(), e = () => {
+    this.glassVerifySettleUntil = performance.now() + Lr, this.verifyTimer !== null && (window.clearTimeout(this.verifyTimer), this.verifyTimer = null);
+    const t = () => {
       if (this.destroyed)
         return;
       this.glass?.verify() && (this.glassDirty = !0, this.engine.isRunning || this.renderOnce());
-      const s = performance.now() - t < Lr;
+      const e = performance.now() < this.glassVerifySettleUntil;
       this.verifyTimer = window.setTimeout(
-        e,
-        s ? Ss : Dr
+        t,
+        e ? Ss : Dr
       );
     };
-    this.verifyTimer = window.setTimeout(e, Ss);
+    this.verifyTimer = window.setTimeout(t, Ss);
   }
   detachListeners() {
     this.resizeObserver?.disconnect(), this.resizeObserver = null, window.removeEventListener("resize", this.onResize), this.intersectionObserver?.disconnect(), this.intersectionObserver = null, document.removeEventListener("visibilitychange", this.onVisibilityChange), document.removeEventListener("scroll", this.onDocumentScroll, { capture: !0 }), window.removeEventListener("pointermove", this.onPointerMove), this.motionQuery && (typeof this.motionQuery.removeEventListener == "function" ? this.motionQuery.removeEventListener("change", this.onMotionPreferenceChange) : typeof this.motionQuery.removeListener == "function" && this.motionQuery.removeListener(this.onMotionPreferenceChange), this.motionQuery = null), this.environmentTimer !== null && (window.clearInterval(this.environmentTimer), this.environmentTimer = null), this.verifyTimer !== null && (window.clearTimeout(this.verifyTimer), this.verifyTimer = null);
@@ -4904,7 +4948,7 @@ class qs {
     ));
   }
 }
-const _s = "aurora-background-root", Cs = "aurora-background-style", Ir = 800;
+const _s = "aurora-background-root", Cs = "aurora-background-style", Ir = 2500;
 class zr {
   constructor() {
     this.root = null, this.styleElement = null, this.layer = null, this.owners = /* @__PURE__ */ new Map(), this.activeOwner = null, this.teardownTimer = null;
@@ -5158,10 +5202,10 @@ const Ur = {
 function E(i) {
   return { name: i, selector: { boolean: {} } };
 }
-function F(i, t, e, s) {
+function N(i, t, e, s) {
   return { name: i, selector: { number: { min: t, max: e, step: s, mode: "slider" } } };
 }
-const Br = [
+const Vr = [
   { name: "weather_entity", selector: { entity: { domain: "weather" } } },
   { name: "sun_entity", selector: { entity: { domain: "sun" } } },
   {
@@ -5224,12 +5268,12 @@ const Br = [
     type: "expandable",
     icon: "mdi:palette",
     schema: [
-      F("intensity", 0, 2, 0.05),
-      F("saturation", 0, 2, 0.05),
-      F("brightness", 0.2, 2, 0.05),
-      F("ambient_glow", 0, 2, 0.05),
-      F("opacity", 0, 1, 0.05),
-      F("blur", 0, 40, 1)
+      N("intensity", 0, 2, 0.05),
+      N("saturation", 0, 2, 0.05),
+      N("brightness", 0.2, 2, 0.05),
+      N("ambient_glow", 0, 2, 0.05),
+      N("opacity", 0, 1, 0.05),
+      N("blur", 0, 40, 1)
     ]
   },
   {
@@ -5237,7 +5281,7 @@ const Br = [
     type: "expandable",
     icon: "mdi:speedometer",
     schema: [
-      F("max_fps", 10, 120, 1),
+      N("max_fps", 10, 120, 1),
       E("auto_quality"),
       E("pause_when_hidden")
     ]
@@ -5258,10 +5302,10 @@ const Br = [
         }
       },
       { name: "preset_entity", selector: { entity: {} } },
-      F("blur", 0, 60, 1),
-      F("opacity", 0, 1, 0.05),
-      F("saturate", 1, 3, 0.05),
-      F("glow", 0, 2, 0.05),
+      N("blur", 0, 60, 1),
+      N("opacity", 0, 1, 0.05),
+      N("saturate", 1, 3, 0.05),
+      N("glow", 0, 2, 0.05),
       { name: "radius", selector: { number: { min: -1, max: 60, step: 1, mode: "box" } } },
       E("border"),
       E("adaptive_text")
@@ -5292,7 +5336,7 @@ const Br = [
     ]
   }
 ];
-class le extends N {
+class le extends H {
   constructor() {
     super(...arguments), this.config = {}, this.computeLabel = (t) => Ur[t.name] ?? t.name;
   }
@@ -5328,7 +5372,7 @@ class le extends N {
       <ha-form
         .hass=${this.hass}
         .data=${this.formData}
-        .schema=${Br}
+        .schema=${Vr}
         .computeLabel=${this.computeLabel}
         @value-changed=${this.onValueChanged}
       ></ha-form>
@@ -5376,10 +5420,10 @@ Xs([
   O()
 ], le.prototype, "config", 2);
 customElements.get("aurora-background-editor") || customElements.define("aurora-background-editor", le);
-var Vr = Object.defineProperty, Wr = Object.getOwnPropertyDescriptor, he = (i, t, e, s) => {
+var Br = Object.defineProperty, Wr = Object.getOwnPropertyDescriptor, he = (i, t, e, s) => {
   for (var n = s > 1 ? void 0 : s ? Wr(t, e) : t, r = i.length - 1, a; r >= 0; r--)
     (a = i[r]) && (n = (s ? a(t, e, n) : a(n)) || n);
-  return s && n && Vr(t, e, n), n;
+  return s && n && Br(t, e, n), n;
 };
 const Yr = ["HUI-CARD-OPTIONS", "HUI-DIALOG-EDIT-CARD", "HUI-CARD-PREVIEW"];
 function qr(i, t = 30) {
@@ -5394,7 +5438,7 @@ function qr(i, t = 30) {
   }
   return !1;
 }
-class _t extends N {
+class _t extends H {
   constructor() {
     super(...arguments), this.preview = !1, this.editing = !1, this.errorMessage = null, this.cardLayer = null, this.mounted = !1, this.lastWeatherState = void 0, this.lastSunState = void 0;
   }
@@ -5536,7 +5580,7 @@ const Qr = {
   radius: "Corner radius (px)",
   border: "Border"
 };
-class Ct extends N {
+class Ct extends H {
   constructor() {
     super(...arguments), this.config = {}, this.computeLabel = (t) => Qr[t.name] ?? t.name;
   }

@@ -58,8 +58,16 @@ interface Owner {
  * card just resumes driving the same layer. The cost is the layer quietly
  * animating, unseen, for up to this long after the background is genuinely
  * removed for good — imperceptible next to the alternative.
+ *
+ * Set generously rather than tightly: a cold dashboard load has far more main
+ * thread contention than a later in-app view switch — the frontend itself
+ * still initialising, other cards' own resources still parsing, a WebSocket
+ * still connecting — so a re-render pass's disconnect-to-reconnect gap can
+ * take noticeably longer there than the same pass would on a warm session.
+ * A slower device under that load is exactly where the flicker this exists to
+ * prevent is most visible, so err on the side of outlasting it.
  */
-const TEARDOWN_GRACE_MS = 800;
+const TEARDOWN_GRACE_MS = 2_500;
 
 class BackgroundMount {
   private root: HTMLDivElement | null = null;

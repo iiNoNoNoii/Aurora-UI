@@ -74,34 +74,46 @@ export class GlassStyles {
   /**
    * An element inside the Lovelace view — the Aurora card itself. Used to see
    * what the cards in that view *actually* resolve, which is not necessarily
-   * what we wrote on the document.
+   * what we wrote on the document. Changes whenever a different view becomes
+   * the active owner (a view switch).
    */
   private probe: HTMLElement | null = null;
   /**
-   * The element that was shadowing us, once found.
+   * Every element found shadowing Aurora so far, keyed by the element, valued
+   * by what it declared before Aurora wrote over it.
    *
    * A theme applied to a Lovelace *view* lands on the view element, which sits
    * between `<html>` and every card in it — closer wins, and no `!important`
    * changes that, because the cascade only arbitrates between declarations on
    * the same element. So Aurora stops arguing from the document and writes
-   * there as well. The element is located by walking up from Aurora's own card
-   * until we find whoever declares the property inline; no tag names, no
-   * assumptions about the frontend's structure.
+   * there as well, for every view this ever happens on — not just the one
+   * currently visible. A single remembered host regressed the moment you
+   * switched to a second themed view and back: the first view's element was
+   * forgotten, so returning to it needed the whole detection cycle again,
+   * visible as the cards sitting in the wrong colour for a moment on *every*
+   * navigation rather than only the first time each view was seen. Elements
+   * are found by walking up from Aurora's own card until something declares
+   * the property inline; no tag names, no assumptions about the frontend's
+   * structure, and disconnected ones are pruned in `verify()`.
    */
-  private scopeHost: HTMLElement | null = null;
-  /**
-   * What the scope host declared before Aurora wrote over it. Escalating means
-   * overwriting part of the user's own theme; `clear()` has to put it back
-   * rather than leave the view with nothing.
-   */
-  private scopeHostOriginal = new Map<string, string>();
+  private scopeHosts = new Map<HTMLElement, Map<string, string>>();
   private warned = false;
 
   /** `hass.themes.darkMode`, used only when the text colour cannot be read. */
   private darkModeHint: boolean | undefined;
 
-  setProbe(element: HTMLElement | null): void {
+  /**
+   * Returns true when the active view actually changed (a view switch). Any
+   * escalation found so far belonged to whatever view was active *then* and
+   * may say nothing about this one — on `true`, the caller (AuroraLayer)
+   * re-verifies immediately rather than waiting for the next poll, which is
+   * exactly the wait that showed up as "briefly the wrong colour" after
+   * switching to a view Aurora had not already escalated to.
+   */
+  setProbe(element: HTMLElement | null): boolean {
+    if (element === this.probe) return false;
     this.probe = element;
+    return true;
   }
 
   setDarkModeHint(value: boolean | undefined): void {
@@ -127,7 +139,7 @@ export class GlassStyles {
 
   /** `document` normally; `view` once Aurora had to escalate to beat a theme. */
   get scope(): 'document' | 'view' {
-    return this.scopeHost ? 'view' : 'document';
+    return this.scopeHosts.size > 0 ? 'view' : 'document';
   }
 
   update(scene: SceneState, glass: GlassConfig, force = false): void {
@@ -276,14 +288,19 @@ export class GlassStyles {
     // polarity and raises the contrast rather than inventing a colour.
     if (glass.adaptive_text) {
       const text: RGB = darkTheme ? [244, 248, 255] : [14, 19, 28];
-      const textTarget = this.textTargets();
-      textTarget.setProperty('--primary-text-color', rgbToCss(text));
+      const primaryCss = rgbToCss(text);
       // Deliberately strong: a dim secondary is the single most common
       // readability complaint on a glass card.
-      textTarget.setProperty('--secondary-text-color', rgbToCss(text, darkTheme ? 0.78 : 0.72));
+      const secondaryCss = rgbToCss(text, darkTheme ? 0.78 : 0.72);
+      for (const target of this.textTargets()) {
+        target.setProperty('--primary-text-color', primaryCss);
+        target.setProperty('--secondary-text-color', secondaryCss);
+      }
       this.textActive = true;
     } else if (this.textActive) {
-      for (const name of TEXT_MANAGED) this.textTargets().removeProperty(name);
+      for (const target of this.textTargets()) {
+        for (const name of TEXT_MANAGED) target.removeProperty(name);
+      }
       this.textActive = false;
     }
   }
@@ -291,26 +308,38 @@ export class GlassStyles {
   /**
    * Where the text colours go.
    *
-   * Preferably only the element Aurora escalated to — normally the Lovelace
-   * view — because `--primary-text-color` reaches beyond cards into dialogs and
-   * the sidebar, and there is no card-scoped equivalent. Scoping it to the view
-   * keeps the rest of Home Assistant on the user's own theme. Without a scope
-   * host there is nowhere narrower than the document to write.
+   * Preferably only the views Aurora escalated to — because `--primary-text-color`
+   * reaches beyond cards into dialogs and the sidebar, and there is no
+   * card-scoped equivalent. Scoping it to those views keeps the rest of Home
+   * Assistant on the user's own theme. Without any scope host there is
+   * nowhere narrower than the document to write.
    */
-  private textTargets(): CSSStyleDeclaration {
-    return this.scopeHost ? this.scopeHost.style : document.documentElement.style;
+  private textTargets(): CSSStyleDeclaration[] {
+    const hosts = this.connectedScopeHosts();
+    return hosts.length > 0 ? hosts.map((host) => host.style) : [document.documentElement.style];
+  }
+
+  private connectedScopeHosts(): HTMLElement[] {
+    const hosts: HTMLElement[] = [];
+    for (const host of this.scopeHosts.keys()) {
+      if (host.isConnected) hosts.push(host);
+      else this.scopeHosts.delete(host);
+    }
+    return hosts;
   }
 
   /**
    * Every place the properties have to be written.
    *
-   * Normally just `<html>`. When a view theme was found shadowing us, the view
-   * element joins the list — writing to both keeps cards outside that view
-   * styled too.
+   * Normally just `<html>`. Every view a theme was found shadowing Aurora on
+   * joins the list — writing to all of them keeps cards in every such view
+   * styled, not only whichever one happens to be visible right now.
    */
   private targets(): CSSStyleDeclaration & { setProperty(name: string, value: string): void } {
-    const hosts: CSSStyleDeclaration[] = [document.documentElement.style];
-    if (this.scopeHost) hosts.push(this.scopeHost.style);
+    const hosts: CSSStyleDeclaration[] = [
+      document.documentElement.style,
+      ...this.connectedScopeHosts().map((host) => host.style),
+    ];
 
     // A tiny façade so the write path below stays a straight list of
     // setProperty calls rather than a loop around every line.
@@ -359,23 +388,37 @@ export class GlassStyles {
       return true;
     }
 
+    // Drop any tracked host that left the document (its view was torn down)
+    // before deciding whether the current probe needs anything.
+    this.connectedScopeHosts();
+
     if (!this.probe) return false;
     const seen = normalise(
       getComputedStyle(this.probe).getPropertyValue('--ha-card-background')
     );
     if (seen.length === 0 || seen === normalise(this.writtenSurface)) return false;
 
-    // Something closer to the cards is winning. Find it and write there too.
+    // Something closer to the cards is winning. Find it.
     const host = findInlineDeclarer(this.probe, '--ha-card-background');
-    if (!host || host === this.scopeHost) return false;
+    if (!host) return false;
 
-    this.scopeHost = host;
-    // Remember the theme's own values before overwriting them.
-    this.scopeHostOriginal.clear();
+    if (this.scopeHosts.has(host)) {
+      // Already tracked and being written to every update() — so something
+      // rewrote it again since then (a theme re-applying itself). Force the
+      // next write through; no need to re-discover or re-log it.
+      this.lastOptions = '';
+      this.lastSurface = null;
+      return true;
+    }
+
+    // A view Aurora has not seen shadow it before. Remember what it declared
+    // before Aurora overwrites it, so `clear()` can put it back later.
+    const original = new Map<string, string>();
     for (const name of [...MANAGED, ...TEXT_MANAGED]) {
       const existing = host.style.getPropertyValue(name);
-      if (existing.length > 0) this.scopeHostOriginal.set(name, existing);
+      if (existing.length > 0) original.set(name, existing);
     }
+    this.scopeHosts.set(host, original);
 
     // Force the next update through: our own inputs did not change, only where
     // they need to land.
@@ -403,18 +446,20 @@ export class GlassStyles {
     const root = this.targets();
     for (const name of MANAGED) root.removeProperty(name);
     if (this.textActive) {
-      for (const name of TEXT_MANAGED) root.removeProperty(name);
+      for (const target of this.textTargets()) {
+        for (const name of TEXT_MANAGED) target.removeProperty(name);
+      }
       this.textActive = false;
     }
-    // Escalating overwrote part of the user's own theme on the view element.
-    // Removing the property would leave the view with nothing until Home
-    // Assistant happened to re-apply; put the original declarations back.
-    if (this.scopeHost) {
-      for (const [name, value] of this.scopeHostOriginal) {
-        this.scopeHost.style.setProperty(name, value);
-      }
-      this.scopeHostOriginal.clear();
+    // Escalating overwrote part of the user's own theme on every view Aurora
+    // scoped to. Removing the property (just above) would leave each of them
+    // with nothing until Home Assistant happened to re-apply; put each view's
+    // own original declarations back.
+    for (const [host, original] of this.scopeHosts) {
+      if (!host.isConnected) continue;
+      for (const [name, value] of original) host.style.setProperty(name, value);
     }
+    this.scopeHosts.clear();
 
     this.active = false;
     this.lastSurface = null;
@@ -422,7 +467,6 @@ export class GlassStyles {
     this.lastGlow = -1;
     this.lastOptions = '';
     this.writtenSurface = '';
-    this.scopeHost = null;
   }
 }
 
