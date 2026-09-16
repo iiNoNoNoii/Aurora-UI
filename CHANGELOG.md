@@ -4,6 +4,34 @@ All notable changes to Aurora UI are documented here.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and the project uses [Semantic Versioning](https://semver.org/).
 
+## [0.6.8-alpha] – 2026-09-16
+
+From a screen recording, pixel-diffed frame by frame: a single video frame,
+roughly 30 ms wide, where the whole dashboard — Aurora's cards *and* Home
+Assistant's own native tiles alongside them — flashed back to raw, un-glassed
+colours before immediately reverting. Not a guess or a slow transition: the
+frame right before and the frame right after were both correct.
+
+### Fixed
+
+- **Aurora now fights back the instant something else touches its styling,
+  instead of polling for it.** Home Assistant is known to recreate view and
+  card elements while resolving a dashboard, and a live state update can
+  trigger a similar internal re-render of a view already on screen — either
+  can briefly restore the raw theme values before settling back on its own.
+  Aurora already checked for exactly this (`verify()`), but only on a timer —
+  every 120 ms at its fastest — which is a comfortably large window for the
+  browser to paint one wrong frame before the next check ever runs, exactly
+  what the recording caught. Aurora now also watches every element it writes
+  to with a `MutationObserver`, which fires as a microtask *before* the
+  browser's next paint. The moment anything changes one of Aurora's
+  properties, it's compared against what Aurora last wrote and put back
+  immediately if it drifted — closing the gap from "up to 120 ms, one visible
+  wrong frame" to "before the wrong frame is ever shown". Verified directly:
+  forcing `--ha-card-background` to a clobbered value from outside Aurora's
+  own code is corrected within a couple of microtask ticks, well before any
+  paint.
+
 ## [0.6.7-alpha] – 2026-09-16
 
 From a screen recording of a cold dashboard load, frame by frame: for a few
@@ -590,6 +618,7 @@ First working release. Everything in this list is implemented and rendering.
 - Nothing has been exercised inside a real Home Assistant yet; every check so
   far ran against a faithful mock.
 
+[0.6.8-alpha]: https://github.com/iiNoNoNoii/Aurora-UI/releases/tag/v0.6.8-alpha
 [0.6.7-alpha]: https://github.com/iiNoNoNoii/Aurora-UI/releases/tag/v0.6.7-alpha
 [0.6.6-alpha]: https://github.com/iiNoNoNoii/Aurora-UI/releases/tag/v0.6.6-alpha
 [0.6.5-alpha]: https://github.com/iiNoNoNoii/Aurora-UI/releases/tag/v0.6.5-alpha

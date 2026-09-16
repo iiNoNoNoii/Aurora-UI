@@ -72,6 +72,28 @@ export class GlassStyles {
   /** The surface value we last wrote, for the verification pass. */
   private writtenSurface = '';
   /**
+   * Every custom property Aurora currently has written, so it can be put
+   * straight back the instant something else touches it — see `reassert()`.
+   */
+  private lastWritten = new Map<string, string>();
+  /**
+   * Fires the moment anything changes a `style` attribute Aurora writes to —
+   * including, critically, something *other than* Aurora. Home Assistant is
+   * known to recreate view and card elements while it resolves a dashboard
+   * (see `TEARDOWN_GRACE_MS` in `background-mount.ts`), and a live state
+   * update can trigger a similar internal re-render of a view already on
+   * screen; either can briefly restore the raw, un-glassed theme values
+   * before settling back on its own a frame later — long enough for the
+   * browser to actually paint that frame. The polling-based `verify()` below
+   * catches this eventually, but "eventually" here means up to 120 ms later,
+   * comfortably enough time for the wrong frame to already be on screen. A
+   * `MutationObserver` callback, by contrast, runs as a microtask — before
+   * the browser's next paint — so putting Aurora's values back here can win
+   * the race before that intermediate frame is ever shown at all.
+   */
+  private observer: MutationObserver | null = null;
+  private observedHosts = new WeakSet<HTMLElement>();
+  /**
    * An element inside the Lovelace view — the Aurora card itself. Used to see
    * what the cards in that view *actually* resolve, which is not necessarily
    * what we wrote on the document. Changes whenever a different view becomes
@@ -216,6 +238,7 @@ export class GlassStyles {
     this.lastGlow = glowStrength;
     this.lastOptions = options;
     this.active = true;
+    this.observe(document.documentElement);
 
     const root = this.targets();
 
@@ -261,6 +284,7 @@ export class GlassStyles {
       overlaySurface,
       'important'
     );
+    this.lastWritten.set('--mdc-theme-surface', overlaySurface);
 
     root.setProperty(
       '--ha-card-backdrop-filter',
@@ -312,11 +336,14 @@ export class GlassStyles {
         target.setProperty('--primary-text-color', primaryCss);
         target.setProperty('--secondary-text-color', secondaryCss);
       }
+      this.lastWritten.set('--primary-text-color', primaryCss);
+      this.lastWritten.set('--secondary-text-color', secondaryCss);
       this.textActive = true;
     } else if (this.textActive) {
       for (const target of this.textTargets()) {
         for (const name of TEXT_MANAGED) target.removeProperty(name);
       }
+      for (const name of TEXT_MANAGED) this.lastWritten.delete(name);
       this.textActive = false;
     }
   }
@@ -356,18 +383,61 @@ export class GlassStyles {
       document.documentElement.style,
       ...this.connectedScopeHosts().map((host) => host.style),
     ];
+    const written = this.lastWritten;
 
     // A tiny façade so the write path below stays a straight list of
-    // setProperty calls rather than a loop around every line.
+    // setProperty calls rather than a loop around every line. Also the single
+    // choke point that records what "correct" looks like right now, for
+    // `reassert()` to put back if anything else touches it.
     return {
       setProperty(name: string, value: string): void {
+        written.set(name, value);
         for (const host of hosts) host.setProperty(name, value);
       },
       removeProperty(name: string): string {
+        written.delete(name);
         for (const host of hosts) host.removeProperty(name);
         return '';
       },
     } as CSSStyleDeclaration;
+  }
+
+  /**
+   * Starts watching `host`'s `style` attribute, if it isn't already. See the
+   * `observer` field for why this exists.
+   */
+  private observe(host: HTMLElement): void {
+    if (this.observedHosts.has(host)) return;
+    if (!this.observer) {
+      this.observer = new MutationObserver(() => this.reassert());
+    }
+    this.observer.observe(host, { attributes: true, attributeFilter: ['style'] });
+    this.observedHosts.add(host);
+  }
+
+  /**
+   * Puts every property Aurora currently owns back to its last-written value,
+   * on every host that's supposed to have it — but only where something has
+   * actually drifted, so this is a no-op (one cheap read per property) on the
+   * mutation events Aurora's own writes generate. See the `observer` field.
+   */
+  private reassert(): void {
+    if (!this.active || this.lastWritten.size === 0) return;
+
+    const hosts: HTMLElement[] = [document.documentElement, ...this.connectedScopeHosts()];
+    let mismatch = false;
+    outer: for (const host of hosts) {
+      for (const [prop, value] of this.lastWritten) {
+        if (normalise(host.style.getPropertyValue(prop)) !== normalise(value)) {
+          mismatch = true;
+          break outer;
+        }
+      }
+    }
+    if (!mismatch) return;
+
+    const root = this.targets();
+    for (const [prop, value] of this.lastWritten) root.setProperty(prop, value);
   }
 
   /**
@@ -435,6 +505,7 @@ export class GlassStyles {
       if (existing.length > 0) original.set(name, existing);
     }
     this.scopeHosts.set(host, original);
+    this.observe(host);
 
     // Force the next update through: our own inputs did not change, only where
     // they need to land.
@@ -476,6 +547,11 @@ export class GlassStyles {
       for (const [name, value] of original) host.style.setProperty(name, value);
     }
     this.scopeHosts.clear();
+
+    this.observer?.disconnect();
+    this.observer = null;
+    this.observedHosts = new WeakSet();
+    this.lastWritten.clear();
 
     this.active = false;
     this.lastSurface = null;
