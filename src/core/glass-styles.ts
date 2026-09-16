@@ -36,7 +36,21 @@ const MANAGED = [
   '--ha-card-box-shadow',
   '--ha-card-border-radius',
   '--aurora-glass-surface',
+  '--mdc-theme-surface',
 ] as const;
+
+/**
+ * `--card-background-color` is not card-specific. Home Assistant's own base
+ * styles commonly alias the Material `--mdc-theme-surface` token to it, and
+ * every Material dialog and dropdown menu — the more-info dialog, this card's
+ * own edit dialog, the three-dot overflow menu — takes its surface from that
+ * token. Handing it the same near-transparent value as `--ha-card-background`
+ * made every one of those overlays unreadable: the dashboard behind them
+ * showed straight through. Overlays get a solid variant of the same colour
+ * instead, at this opacity — still on-brand, never see-through. A modal
+ * surface has no business being glass in the first place.
+ */
+const OVERLAY_OPACITY = 0.96;
 
 const TEXT_MANAGED = ['--primary-text-color', '--secondary-text-color'] as const;
 
@@ -206,8 +220,19 @@ export class GlassStyles {
     this.writtenSurface = surfaceCss;
     root.setProperty('--aurora-glass-surface', surfaceCss);
     root.setProperty('--ha-card-background', surfaceCss);
-    // Some cards read `--card-background-color` directly instead.
-    root.setProperty('--card-background-color', surfaceCss);
+
+    // See OVERLAY_OPACITY: --card-background-color feeds dialogs and menus as
+    // well as cards, so it gets a solid surface rather than the glass one.
+    const overlaySurface = rgbToCss(surface, OVERLAY_OPACITY);
+    root.setProperty('--card-background-color', overlaySurface);
+    // Written to the document only, never scoped to a view: a dialog is not
+    // necessarily a descendant of whichever view Aurora escalated to, since
+    // Home Assistant renders dialogs high in the DOM rather than inside it.
+    document.documentElement.style.setProperty(
+      '--mdc-theme-surface',
+      overlaySurface,
+      'important'
+    );
 
     root.setProperty(
       '--ha-card-backdrop-filter',
@@ -313,27 +338,36 @@ export class GlassStyles {
    *    its value shadows ours no matter how important our declaration is. That
    *    is not a fight we can win from the document, so Aurora finds that
    *    element and writes there as well.
+   *
+   * Returns true when either case fired, so the caller can force the *next*
+   * `update()` call through immediately. Clearing the comparison cache alone
+   * is not enough: `update()` also throttles on elapsed time regardless of
+   * whether anything changed, so without an explicit force the correction
+   * would only land once that clock — up to `MIN_INTERVAL_MS` after the last
+   * write, unrelated to when this was detected — happened to run out. That
+   * gap is exactly what showed up as cards sitting in the wrong colour for a
+   * moment after every navigation.
    */
-  verify(): void {
-    if (!this.active || !this.writtenSurface) return;
+  verify(): boolean {
+    if (!this.active || !this.writtenSurface) return false;
 
     const root = document.documentElement.style;
     if (normalise(root.getPropertyValue('--ha-card-background')) !== normalise(this.writtenSurface)) {
       // Someone rewrote the document properties. Force the next update through.
       this.lastOptions = '';
       this.lastSurface = null;
-      return;
+      return true;
     }
 
-    if (!this.probe) return;
+    if (!this.probe) return false;
     const seen = normalise(
       getComputedStyle(this.probe).getPropertyValue('--ha-card-background')
     );
-    if (seen.length === 0 || seen === normalise(this.writtenSurface)) return;
+    if (seen.length === 0 || seen === normalise(this.writtenSurface)) return false;
 
     // Something closer to the cards is winning. Find it and write there too.
     const host = findInlineDeclarer(this.probe, '--ha-card-background');
-    if (!host || host === this.scopeHost) return;
+    if (!host || host === this.scopeHost) return false;
 
     this.scopeHost = host;
     // Remember the theme's own values before overwriting them.
@@ -359,6 +393,8 @@ export class GlassStyles {
           'the preset to "plain", to hand the cards back to your theme.'
       );
     }
+
+    return true;
   }
 
   /** Hand every managed property back to the user's theme. */

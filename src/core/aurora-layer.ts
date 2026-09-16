@@ -18,6 +18,22 @@ const PARALLAX_SCROLL_RANGE = 0.06;
 const PARALLAX_POINTER_RANGE = 0.012;
 
 /**
+ * Aurora Glass detects a view theme shadowing it reactively, by comparing what
+ * it wrote against what a card actually resolves — see `GlassStyles.verify()`.
+ * Home Assistant frequently (re-)applies a view theme during the first few
+ * seconds after a dashboard loads or a view is switched to. Polling that check
+ * every two seconds, from the very start, left a window of up to two full
+ * seconds where the cards showed the theme's own colour before Aurora caught
+ * up and corrected itself — visible as the cards briefly being "a different,
+ * darker colour" on every navigation. Polling fast for a short settling
+ * window shrinks that gap to well under a perceptible flicker; the slow
+ * cadence afterwards is just an ongoing safety net.
+ */
+const GLASS_VERIFY_SETTLE_MS = 6_000;
+const GLASS_VERIFY_FAST_MS = 120;
+const GLASS_VERIFY_SLOW_MS = 2_000;
+
+/**
  * One animated canvas inside a host element.
  *
  * Owns every listener it registers and tears all of them down in `destroy()`.
@@ -272,7 +288,32 @@ export class AuroraLayer {
     // `sun.sun` only updates every ~30 s, and without the sun integration we
     // compute the position ourselves – refresh once a minute either way.
     this.environmentTimer = window.setInterval(this.refreshEnvironment, 60_000);
-    if (this.glass) this.verifyTimer = window.setInterval(() => this.glass?.verify(), 2_000);
+    this.startGlassVerification();
+  }
+
+  /** Fast at first, then falls back to a cheap cadence – see GLASS_VERIFY_*. */
+  private startGlassVerification(): void {
+    if (!this.glass) return;
+    const startedAt = performance.now();
+
+    const tick = (): void => {
+      if (this.destroyed) return;
+      if (this.glass?.verify()) {
+        // Don't wait for update()'s own write throttle to happen to run out –
+        // that clock is unrelated to when this was detected. Force the very
+        // next frame through, and paint immediately if nothing is currently
+        // driving frames at all (e.g. the tab is hidden).
+        this.glassDirty = true;
+        if (!this.engine.isRunning) this.renderOnce();
+      }
+      const settling = performance.now() - startedAt < GLASS_VERIFY_SETTLE_MS;
+      this.verifyTimer = window.setTimeout(
+        tick,
+        settling ? GLASS_VERIFY_FAST_MS : GLASS_VERIFY_SLOW_MS
+      );
+    };
+
+    this.verifyTimer = window.setTimeout(tick, GLASS_VERIFY_FAST_MS);
   }
 
   private detachListeners(): void {
@@ -302,7 +343,8 @@ export class AuroraLayer {
     }
 
     if (this.verifyTimer !== null) {
-      window.clearInterval(this.verifyTimer);
+      // A recursive setTimeout chain, not an interval – see startGlassVerification().
+      window.clearTimeout(this.verifyTimer);
       this.verifyTimer = null;
     }
   }

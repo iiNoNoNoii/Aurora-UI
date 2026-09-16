@@ -4,6 +4,72 @@ All notable changes to Aurora UI are documented here.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and the project uses [Semantic Versioning](https://semver.org/).
 
+## [0.6.5-alpha] – 2026-09-16
+
+Three problems from watching a real dashboard load and navigate: the sky
+flickered twice on every load or view switch, cards briefly showed the wrong
+colour before settling, and dialogs/menus were unreadably transparent.
+
+### Fixed
+
+- **The background no longer flickers on load or view switch.** Home
+  Assistant's own dashboard bootstrapping is known to recreate view and card
+  elements more than once while it resolves the final config — an initial pass
+  with a cached or default config, then again once the real one arrives.
+  Every one of those passes disconnected Aurora's card and reconnected a new
+  instance moments later, and the shared background layer treated that as
+  "the background is gone": it destroyed the canvas **and** removed the
+  transparency stylesheet immediately, letting the theme's own opaque
+  background flash through until a new layer was built from scratch. That is
+  what read as two flickers, at whatever intervals those passes happened to
+  land.
+
+  The shared layer now waits 800 ms after the last owner releases before
+  actually tearing anything down. A reconnect inside that window — which is
+  what every case above is — just resumes driving the exact same canvas and
+  stylesheet; nothing is ever removed. Verified directly: disconnecting and
+  reconnecting the card within the window leaves the root element, its canvas
+  and the style element as the *same* DOM nodes throughout, while a
+  disconnect with no reconnect still tears down correctly once the window
+  passes.
+
+- **Cards no longer sit in the wrong colour for a moment after navigating.**
+  This was a gap in the fix that let Aurora Glass win against a view-level
+  theme at all: detecting the mismatch (`GlassStyles.verify()`) cleared the
+  comparison cache so the *next* write would differ, but `update()` also
+  throttles on elapsed time regardless of whether anything changed — so the
+  correction could still land up to `MIN_INTERVAL_MS` (500 ms) after
+  detection, on a clock that had nothing to do with when the theme was
+  actually applied. `verify()` now reports back when it found something to
+  fix, and that forces the very next frame through immediately, the same way
+  an entity-driven preset change already does. Verified end to end against a
+  simulated view theme: the view element's own inline property is overwritten
+  with Aurora's value, not just the document's.
+
+  The detection cadence is also faster right after mount — every 120 ms for
+  the first 6 seconds, falling back to the cheap 2 s poll once settled — since
+  Home Assistant applies (or re-applies) a view theme within exactly that
+  window.
+
+- **Dialogs and menus are readable again.** The more-info dialog, this card's
+  own edit dialog, and the three-dot overflow menu were all picking up
+  Aurora Glass's near-transparent card colour and showing the dashboard
+  straight through. The cause: `--card-background-color` is not
+  card-specific — Home Assistant's base styles commonly alias the Material
+  `--mdc-theme-surface` token to it, and every Material dialog and dropdown
+  menu takes its surface from that token. Aurora was handing it the same
+  translucent value used for `--ha-card-background`.
+
+  `--card-background-color` and `--mdc-theme-surface` now get a solid,
+  near-opaque variant of the same colour instead, written independently of
+  the deliberately translucent `--ha-card-background` cards actually use.
+  Verified: with Glass active, `--ha-card-background` stays at the configured
+  translucent alpha while `--card-background-color` and `--mdc-theme-surface`
+  both resolve to a 0.96-alpha solid of the same tone. `--mdc-theme-surface`
+  is written to the document only (a dialog is not necessarily a descendant
+  of whichever view got escalated) and with `!important`, since a modal
+  surface has no business being glass in the first place.
+
 ## [0.6.4-alpha] – 2026-09-15
 
 Two readability problems from a photograph of a real dashboard: the cards were
@@ -460,6 +526,7 @@ First working release. Everything in this list is implemented and rendering.
 - Nothing has been exercised inside a real Home Assistant yet; every check so
   far ran against a faithful mock.
 
+[0.6.5-alpha]: https://github.com/iiNoNoNoii/Aurora-UI/releases/tag/v0.6.5-alpha
 [0.6.4-alpha]: https://github.com/iiNoNoNoii/Aurora-UI/releases/tag/v0.6.4-alpha
 [0.6.3-alpha]: https://github.com/iiNoNoNoii/Aurora-UI/releases/tag/v0.6.3-alpha
 [0.6.2-alpha]: https://github.com/iiNoNoNoii/Aurora-UI/releases/tag/v0.6.2-alpha

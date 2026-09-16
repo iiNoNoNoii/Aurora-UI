@@ -39,6 +39,28 @@ interface Owner {
   hass: HomeAssistant | undefined;
 }
 
+/**
+ * How long to keep the layer alive with zero owners before actually tearing
+ * it down.
+ *
+ * Home Assistant's own dashboard bootstrapping is known to recreate view and
+ * card elements more than once while it resolves the final config — an
+ * initial pass with a cached or default config, then again once the real one
+ * arrives, and again if resources finish loading after that. Each pass
+ * disconnects our card and reconnects a new instance moments later. Tearing
+ * down on every disconnect — removing the canvas AND the transparency
+ * stylesheet — means the theme's own opaque background flashes through for
+ * that gap, twice, at whatever intervals those passes happen to land. That is
+ * "the background flickers twice on every page load or switch".
+ *
+ * Waiting a short grace period for a re-acquire avoids the whole class of
+ * glitch: the canvas and stylesheet simply stay put, and the reconnecting
+ * card just resumes driving the same layer. The cost is the layer quietly
+ * animating, unseen, for up to this long after the background is genuinely
+ * removed for good — imperceptible next to the alternative.
+ */
+const TEARDOWN_GRACE_MS = 800;
+
 class BackgroundMount {
   private root: HTMLDivElement | null = null;
   private styleElement: HTMLStyleElement | null = null;
@@ -46,8 +68,15 @@ class BackgroundMount {
   private readonly owners = new Map<object, Owner>();
   /** The owner whose config is currently driving the shared layer. */
   private activeOwner: object | null = null;
+  /** Pending call to `teardown()`, cancelled by any `acquire()` in the meantime. */
+  private teardownTimer: number | null = null;
 
   acquire(token: object, config: AuroraBackgroundConfig, hass: HomeAssistant | undefined): void {
+    if (this.teardownTimer !== null) {
+      window.clearTimeout(this.teardownTimer);
+      this.teardownTimer = null;
+    }
+
     this.owners.set(token, { config, hass });
     this.activeOwner = token;
     this.ensureMounted(config);
@@ -89,6 +118,17 @@ class BackgroundMount {
     }
 
     this.activeOwner = null;
+
+    // Don't tear down immediately – see TEARDOWN_GRACE_MS. A fresh acquire()
+    // within the window cancels this and the layer is never disturbed.
+    if (this.teardownTimer !== null) window.clearTimeout(this.teardownTimer);
+    this.teardownTimer = window.setTimeout(() => {
+      this.teardownTimer = null;
+      this.teardown();
+    }, TEARDOWN_GRACE_MS);
+  }
+
+  private teardown(): void {
     this.layer?.destroy();
     this.layer = null;
     this.root?.remove();
