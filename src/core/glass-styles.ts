@@ -127,14 +127,24 @@ export class GlassStyles {
    * `hass.themes.darkMode`, because a custom theme can be dark while Home
    * Assistant still reports light mode — and it is the text Aurora has to stay
    * readable against. Light text means a dark theme.
+   *
+   * Returns `null` when neither signal is available yet — the very first
+   * calls on a cold dashboard load, before the theme has painted the probe
+   * element and before `hass` has arrived with `themes.darkMode`. Guessing
+   * dark here used to be the fallback, and it is wrong roughly half the time:
+   * on a light theme, that produced one real paint with the wrong polarity —
+   * a dark, translucent card, "like sunglasses" — immediately followed by the
+   * correct light one a frame or two later once real data resolved. Reporting
+   * "unknown" instead lets the caller skip writing anything until it has a
+   * real answer, so there is only ever one paint, with the right polarity.
    */
-  private isDarkTheme(): boolean {
+  private isDarkTheme(): boolean | null {
     const element = this.probe ?? document.documentElement;
     const declared = getComputedStyle(element).getPropertyValue('--primary-text-color');
     const parsed = parseCssColor(declared);
     if (parsed) return luminance(parsed) > 128;
     if (typeof this.darkModeHint === 'boolean') return this.darkModeHint;
-    return true;
+    return null;
   }
 
   /** `document` normally; `view` once Aurora had to escalate to beat a theme. */
@@ -160,6 +170,12 @@ export class GlassStyles {
     // this well uses a *dark* translucent surface with a light hairline; the
     // contrast comes from the border and the text, not from flipping the panel.
     const darkTheme = this.isDarkTheme();
+    if (darkTheme === null) {
+      // Polarity isn't knowable yet (see isDarkTheme) — leave the cards on the
+      // user's own theme rather than paint a guess, and retry on the next
+      // call without spending the throttle window on it.
+      return;
+    }
     const surface = mixRgb(
       scene.palette.ambient,
       darkTheme ? [10, 13, 20] : [240, 245, 252],

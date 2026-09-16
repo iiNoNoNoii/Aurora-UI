@@ -4,6 +4,34 @@ All notable changes to Aurora UI are documented here.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and the project uses [Semantic Versioning](https://semver.org/).
 
+## [0.6.7-alpha] – 2026-09-16
+
+From a screen recording of a cold dashboard load, frame by frame: for a few
+frames right after the dashboard first painted, every card was dark —
+near-black surface, white text — before flipping to the correct light glass a
+frame or two later. Described as "dark and see-through like sunglasses, then
+bright."
+
+### Fixed
+
+- **Aurora Glass no longer guesses the theme's polarity.** `isDarkTheme()`
+  reads whether the surrounding theme is dark from its own primary text
+  colour, live off the DOM, with `hass.themes.darkMode` as a fallback hint.
+  On a cold load, for the first handful of calls, *neither* is available yet —
+  the probe element hasn't been styled by the real theme, and `hass` hasn't
+  arrived with `themes` — and the old code treated "unknown" as "assume dark".
+  On a light dashboard that produced one real paint with the wrong polarity: a
+  dark, translucent card, immediately followed by the correct light one once
+  real data resolved a frame or two later. That is the flash from the
+  recording. `isDarkTheme()` now returns `null` instead of guessing, and
+  `update()` skips writing anything at all while it does — the cards stay on
+  Home Assistant's own default styling for those first few frames instead of
+  a wrong Aurora one, then get styled once, correctly, the moment the real
+  polarity is known. Verified in the dev harness: with no theme signal present
+  at all, Aurora writes nothing (`--ha-card-background` stays unset); the
+  instant a signal appears, it writes the correct value directly, with no
+  intermediate wrong-polarity write ever observed.
+
 ## [0.6.6-alpha] – 2026-09-16
 
 From a screen recording: cards still switched to the wrong colour on
@@ -562,6 +590,7 @@ First working release. Everything in this list is implemented and rendering.
 - Nothing has been exercised inside a real Home Assistant yet; every check so
   far ran against a faithful mock.
 
+[0.6.7-alpha]: https://github.com/iiNoNoNoii/Aurora-UI/releases/tag/v0.6.7-alpha
 [0.6.6-alpha]: https://github.com/iiNoNoNoii/Aurora-UI/releases/tag/v0.6.6-alpha
 [0.6.5-alpha]: https://github.com/iiNoNoNoii/Aurora-UI/releases/tag/v0.6.5-alpha
 [0.6.4-alpha]: https://github.com/iiNoNoNoii/Aurora-UI/releases/tag/v0.6.4-alpha

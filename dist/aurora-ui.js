@@ -4405,10 +4405,20 @@ class xr {
    * `hass.themes.darkMode`, because a custom theme can be dark while Home
    * Assistant still reports light mode — and it is the text Aurora has to stay
    * readable against. Light text means a dark theme.
+   *
+   * Returns `null` when neither signal is available yet — the very first
+   * calls on a cold dashboard load, before the theme has painted the probe
+   * element and before `hass` has arrived with `themes.darkMode`. Guessing
+   * dark here used to be the fallback, and it is wrong roughly half the time:
+   * on a light theme, that produced one real paint with the wrong polarity —
+   * a dark, translucent card, "like sunglasses" — immediately followed by the
+   * correct light one a frame or two later once real data resolved. Reporting
+   * "unknown" instead lets the caller skip writing anything until it has a
+   * real answer, so there is only ever one paint, with the right polarity.
    */
   isDarkTheme() {
     const t = this.probe ?? document.documentElement, e = getComputedStyle(t).getPropertyValue("--primary-text-color"), s = Pr(e);
-    return s ? mt(s) > 128 : typeof this.darkModeHint == "boolean" ? this.darkModeHint : !0;
+    return s ? mt(s) > 128 : typeof this.darkModeHint == "boolean" ? this.darkModeHint : null;
   }
   /** `document` normally; `view` once Aurora had to escalate to beat a theme. */
   get scope() {
@@ -4422,7 +4432,10 @@ class xr {
     const n = performance.now();
     if (!s && n - this.lastWrite < Cr)
       return;
-    const r = this.isDarkTheme(), a = I(
+    const r = this.isDarkTheme();
+    if (r === null)
+      return;
+    const a = I(
       t.palette.ambient,
       r ? [10, 13, 20] : [240, 245, 252],
       0.78
