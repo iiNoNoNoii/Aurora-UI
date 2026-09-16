@@ -1,4 +1,4 @@
-/*! Aurora UI v0.6.8-alpha | AGPL-3.0-or-later | Source: https://github.com/iiNoNoNoii/Aurora-UI */
+/*! Aurora UI v0.7.0-beta | AGPL-3.0-or-later | Source: https://github.com/iiNoNoNoii/Aurora-UI */
 const P = Math.PI * 2;
 function x(n, t, e) {
   return n < t ? t : n > e ? e : n;
@@ -81,7 +81,7 @@ function ut(n) {
   const t = n.trim().toLowerCase().replace(/ä/g, "ae").replace(/ö/g, "oe").replace(/ü/g, "ue").replace(/ß/g, "ss");
   return Zs[t] ?? null;
 }
-const ft = "aurora-background", Js = "Aurora Background", ke = "0.6.8-alpha", pe = ["low", "medium", "high", "ultra"], ti = ["background", "card"], ei = {
+const ft = "aurora-background", Js = "Aurora Background", ke = "0.7.0-beta", pe = ["low", "medium", "high", "ultra"], ti = ["background", "card"], ei = {
   low: {
     level: "low",
     renderScale: 0.6,

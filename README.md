@@ -17,6 +17,10 @@ surface that drifts with the sky.
 [![Validate](https://github.com/iiNoNoNoii/Aurora-UI/actions/workflows/validate.yml/badge.svg)](https://github.com/iiNoNoNoii/Aurora-UI/actions/workflows/validate.yml)
 [![hacs](https://img.shields.io/badge/HACS-custom-41BDF5.svg)](https://hacs.xyz)
 [![license](https://img.shields.io/badge/license-AGPL--3.0-blue.svg)](LICENSE)
+[![Buy Me A Coffee](https://www.buymeacoffee.com/assets/img/custom_images/orange_img.png)](https://buymeacoffee.com/iinononoii)
+
+Not affiliated with, endorsed by, or sponsored by Home Assistant or the Open
+Home Foundation. "Home Assistant" is a trademark of the Open Home Foundation.
 
 ---
 

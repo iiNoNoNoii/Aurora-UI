@@ -1,6 +1,6 @@
 {
   "name": "aurora-ui",
-  "version": "0.6.8-alpha",
+  "version": "0.7.0-beta",
   "description": "Aurora UI – a modular UI suite for Home Assistant: procedural weather background, glassmorphism, and cards.",
   "type": "module",
   "license": "AGPL-3.0-or-later",

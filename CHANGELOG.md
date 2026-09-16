@@ -4,6 +4,29 @@ All notable changes to Aurora UI are documented here.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and the project uses [Semantic Versioning](https://semver.org/).
 
+## [0.7.0-beta] – 2026-09-16
+
+Every bug reported against a real dashboard on a real device across the
+0.6.x alpha cycle — the double flicker, the wrong-colour flash on
+navigation, the dark-then-light guess on cold load, the unreadable
+dialogs/menus, and the single-frame style-revert flash — is now fixed and
+verified. Moving out of alpha.
+
+### Added
+
+- A "Buy Me A Coffee" link in the README, for anyone who wants to support the
+  project.
+- A short notice in the README stating Aurora UI is not affiliated with,
+  endorsed by, or sponsored by Home Assistant or the Open Home Foundation.
+
+### Checked
+
+- Re-verified before this release: the AGPL-3.0-or-later banner and the
+  BSD-3-Clause license headers for the bundled Lit code both survive
+  minification in `dist/aurora-ui.js` (see `THIRD-PARTY-NOTICES.md`); no
+  third-party images, fonts or data files are bundled; no personal data from
+  testing ever made it into the repository.
+
 ## [0.6.8-alpha] – 2026-09-16
 
 From a screen recording, pixel-diffed frame by frame: a single video frame,
@@ -618,6 +641,7 @@ First working release. Everything in this list is implemented and rendering.
 - Nothing has been exercised inside a real Home Assistant yet; every check so
   far ran against a faithful mock.
 
+[0.7.0-beta]: https://github.com/iiNoNoNoii/Aurora-UI/releases/tag/v0.7.0-beta
 [0.6.8-alpha]: https://github.com/iiNoNoNoii/Aurora-UI/releases/tag/v0.6.8-alpha
 [0.6.7-alpha]: https://github.com/iiNoNoNoii/Aurora-UI/releases/tag/v0.6.7-alpha
 [0.6.6-alpha]: https://github.com/iiNoNoNoii/Aurora-UI/releases/tag/v0.6.6-alpha
